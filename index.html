@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en_US">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+</head>
+<body>
+<div id="app">
+  <p v-if="seen">{{ message }}</p>
+  <ol>
+    <csv-row
+        v-for="crow in csvrows"
+        :row="crow.line"
+        :key="crow.id"
+    >
+        <li>
+            <li v-for="cell in cells"></li>
+        </li>
+    </csv-row>
+  </ol>
+</div>
+
+<script src="vue.js"></script>
+<script src="main.js"></script>
+
+</body>
+</html>
