@@ -9,42 +9,61 @@ window.CSV = (function() {
     }
 })();
 
-Vue.component("csv-row", {
-    props: ["row"],
-    template: `\
-        <li>\
-            <div v-for="cell in cells">\
-            {{cell}}
-            </div>\
-        </li>\
-    `,
-    computed: {
-        cells: function () {
-            var ret = this.row.split(","); // correct only if no quotes
-            console.log("in cells: " + this + ", this.row = " + this.row + " and returning " + JSON.stringify(ret));
-            return ret;
-        }
+Vue.component("line-chart", {
+    extends: VueChartJs.Line,
+    mixins: [VueChartJs.mixins.reactiveProp, VueChartJs.mixins.reactiveData],
+    mounted() {
+        this.renderChart(this.chartData, this.chartOptions);
     }
 });
 
 window.App = new Vue({
   el: '#app',
   data: {
-    message: 'Hello Vue.js!',
-    seen: true,
-    lines: [
-        "1,2",
-        "3,4",
-    ]
+    chartData: [
+    {
+      labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+      datasets: [
+        {
+          label: 'Data One',
+          backgroundColor: '#f87979',
+          data: [40, 39, 10, 40, 39, 80, 40]
+        },
+        {
+          label: 'Data Two',
+          backgroundColor: '#88f939',
+          data: [20, 29, 40, 50, 29, 50, 30]
+        }
+      ]
+    },
+    {
+      labels: ['January', 'February', 'March', 'April', 'May', 'June', 'July'],
+      datasets: [
+        {
+          label: 'Data Two',
+          backgroundColor: '#88f939',
+          data: [20, 29, 40, 50, 29, 50, 30]
+        }
+      ]
+    }
+    ],
+    chartOptions: {
+        responsive: true, maintainAspectRatio: false
+    },
+    first: true
   },
   computed: {
-    csvrows: function() {
-        ret = [];
-        for (var index in this.lines) {
-            ret.push({id: index, line: this.lines[index]});
-        }
-        console.log("csvrows: returning " + JSON.stringify(ret));
-        return ret;
+    chart_summary: function() {
+        return "not done yet";
+    },
+    second: function() {
+        console.log("second called");
+        return !this.first;
     }
-  }
-})
+  },
+  methods: {
+      checked: function() {
+          this.first = !this.first;
+      }
+  },
+});

@@ -5,21 +5,19 @@
 </head>
 <body>
 <div id="app">
-  <p v-if="seen">{{ message }}</p>
-  <ol>
-    <csv-row
-        v-for="crow in csvrows"
-        :row="crow.line"
-        :key="crow.id"
-    >
-        <li>
-            <li v-for="cell in cells"></li>
-        </li>
-    </csv-row>
-  </ol>
+  <p>{{ chart_summary }}</p>
+  <input type="checkbox" @click="checked" :value="first">
+  <line-chart
+    :chart-data="chartData[0]"
+    :chart-options="chartOptions"/>
+  <line-chart
+    :chart-data="chartData[1]"
+    :chart-options="chartOptions"/>
 </div>
 
 <script src="vue.js"></script>
+<script src="Chart.js"></script>
+<script src="vue-chartjs.js"></script>
 <script src="main.js"></script>
 
 </body>

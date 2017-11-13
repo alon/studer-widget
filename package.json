@@ -6,9 +6,13 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Alon Levy <alon@pobox.com>",
   "license": "ISC",
   "dependencies": {
-    "webpack": "^3.8.1"
+    "axios": "^0.17.1",
+    "chart.js": "^2.7.1",
+    "vue-chartjs": "^3.0.2",
+    "webpack": "^3.8.1",
+    "yarn": "^1.3.2"
   }
 }
