@@ -46,6 +46,7 @@ function parse_csv(data)
         var col = cells.map(function (row) { return row[i]; });
         ret[title] = col;
     }
+    // TODO: convert time to Date objects (by parsing)
     ret.csv_version = header[0];
     ret.titles = titles;
     ret.extra_header = extra_header;
@@ -61,7 +62,7 @@ function create_graph(response)
     window.Data = data;
     var label_uin = 'XT-Uin [Vac]';
     var label_iin = 'XT-Iin [Aac]';
-    var time = data.time;
+    var time = data.time.map(function (t) { return t.split(' ')[1]; });
     var colors = ['#f87979', '#88f939'];
     var datasets = [];
     var interesting_indices = [1, 4, 5];
@@ -77,7 +78,7 @@ function create_graph(response)
     window.App = new Vue({
       el: '#app',
       template: '<div>\n' +
-                '  <p id="summary">{{ chart_summary }}</p>\n' +
+                '  <p id="title">{{ chart_title }}</p>\n' +
                 '    <line-chart\n' +
                 '      :chart-data="chartData"\n' +
                 '      :chart-options="chartOptions"/>\n' +
@@ -96,8 +97,13 @@ function create_graph(response)
         },
       },
       computed: {
-        chart_summary: function() {
-            return "XT Log: " + this.time[0] + ".." + this.time[this.time.length - 1]
+        chart_title: function() {
+            var start = this.time[0];
+            var last = this.time[this.time.length - 1];
+            if (start.split(' ')[0] == last.split(' ')[0]) {
+                last = last.split(' ')[1];
+            }
+            return "XT Log: " + start + ".." + last
                 + " (" + this.csv_version + ")";
         },
         second: function() {
