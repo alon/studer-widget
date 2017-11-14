@@ -93,7 +93,13 @@ function create_graph(response)
           datasets: datasets,
         },
         chartOptions: {
-            responsive: true, maintainAspectRatio: false
+            responsive: true,
+            maintainAspectRatio: true, /* default */
+            /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
+            tooltips: {
+                intersect: false,
+                mode: 'index',
+            },
         },
       },
       computed: {
