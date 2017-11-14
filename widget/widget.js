@@ -62,6 +62,7 @@ function create_graph(response)
     window.Data = data;
     var label_uin = 'XT-Uin [Vac]';
     var label_iin = 'XT-Iin [Aac]';
+    var date = data.time[0].split(' ')[0];
     var time = data.time.map(function (t) { return t.split(' ')[1]; });
     var colors = ['#f87979', '#88f939'];
     var datasets = [];
@@ -85,6 +86,7 @@ function create_graph(response)
                 '</div>'
       ,
       data: {
+        date: date,
         time: time,
         csv_version: data.csv_version,
         chartData:
@@ -106,10 +108,7 @@ function create_graph(response)
         chart_title: function() {
             var start = this.time[0];
             var last = this.time[this.time.length - 1];
-            if (start.split(' ')[0] == last.split(' ')[0]) {
-                last = last.split(' ')[1];
-            }
-            return "XT Log: " + start + ".." + last
+            return "XT Log: " + this.date + ' ' + start + ".." + last
                 + " (" + this.csv_version + ")";
         },
         second: function() {
