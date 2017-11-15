@@ -124,6 +124,23 @@ function create_graph(response)
     });
 }
 
+
+function getParamValue(paramName)
+{
+    var url = window.location.search.substring(1); //get rid of "?" in querystring
+    var qArray = url.split('&'); //get key-value pairs
+    for (var i = 0; i < qArray.length; i++) 
+    {
+        var pArr = qArray[i].split('='); //split key and value
+        if (pArr[0] == paramName) {
+            return pArr[1]; //return value
+        }
+    }
+}
+
+
+var csv_url = getParamValue("csv");
+
 // Not sure: show a "waiting" thing first?
 // Right now:
 //  start XHR for CSV
@@ -131,7 +148,7 @@ function create_graph(response)
 //  when it arrives, create chart
 //   - which will contain all charts
 
-axios.get('LG160704.CSV')
+axios.get(csv_url)
     .then(create_graph);
 
 
