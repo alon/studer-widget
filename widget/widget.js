@@ -1,14 +1,3 @@
-window.CSV = (function() {
-    return {
-        read: function (fulltext) {
-        /*
-            lines = [];
-            for c in 
-*/
-        }
-    }
-})();
-
 Vue.component("line-chart", {
     extends: VueChartJs.Line,
     mixins: [VueChartJs.mixins.reactiveProp, VueChartJs.mixins.reactiveData],
@@ -16,6 +5,7 @@ Vue.component("line-chart", {
         this.renderChart(this.chartData, this.chartOptions);
     }
 });
+
 
 function parse_csv(data)
 {
@@ -54,16 +44,45 @@ function parse_csv(data)
     return ret;
 }
 
+function csv_date(timestr)
+{
+    var date = timestr.split(' ')[0].split('.');
+    var year = date[2];
+    var month = date[1];
+    var day = date[0];
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0)); // month is 0 based
+}
+
+
+function merge_csv(csvs)
+{
+    // Note: ignores csv_version, extra_header, trailer
+    var sorted = csvs.map((c, i) => [csv_date(c.time[0]), i]).sort((a, b) => a[0].getTime() > b[0].getTime()).map(d => csvs[d[1]]);
+    var ret = sorted[0];
+    for (var i = 1 ; i < sorted.length ; ++i)
+    {
+        var other = sorted[i];
+        for (var it = 0 ; it < ret.titles.length ; ++it)
+        {
+            var title = ret.titles[it];
+            ret[title] = ret[title].concat(other[title]);
+        }
+    }
+    return ret;
+}
+
 
 function create_graph(response)
 {
-    window.Response = response; // for debugging
-    var data = parse_csv(response.data);
-    window.Data = data;
-    var label_uin = 'XT-Uin [Vac]';
-    var label_iin = 'XT-Iin [Aac]';
-    var date = data.time[0].split(' ')[0];
-    var time = data.time.map(function (t) { return t.split(' ')[1]; });
+    G_Response = response; // for debugging
+    var csvs = response.map(res => parse_csv(res.data));
+    G_CSVS = csvs;
+    var data = merge_csv(csvs);
+    var parts = data.time.map(x => x.split(' '));
+    var date_start = parts[0][0];
+    var date_end = parts[parts.length - 1][0];
+    var time = parts.map(p => p[1]);
+    var labels = parts.map(p => p[0].split('.')[0] + ' ' + p[1]);
     var colors = ['#f87979', '#88f939'];
     var datasets = [];
     var interesting_indices = [1, 4, 5];
@@ -86,12 +105,13 @@ function create_graph(response)
                 '</div>'
       ,
       data: {
-        date: date,
+        date_start: date_start,
+        date_end: date_end,
         time: time,
         csv_version: data.csv_version,
         chartData:
         {
-          labels: time,
+          labels: labels,
           datasets: datasets,
         },
         chartOptions: {
@@ -108,7 +128,7 @@ function create_graph(response)
         chart_title: function() {
             var start = this.time[0];
             var last = this.time[this.time.length - 1];
-            return "XT Log: " + this.date + ' ' + start + ".." + last
+            return "XT Log: " + this.date_start + ' ' + start + ".." + ' ' + this.date_end + ' ' + last
                 + " (" + this.csv_version + ")";
         },
         second: function() {
@@ -138,6 +158,19 @@ function getParamValue(paramName)
     }
 }
 
+function get_all_csv_files(response)
+{
+    var data = (response.data);
+    // TODO: return all. sstart with one
+    var promises = [];
+    var lines = data.split('\n');
+    for (var i = 0 ; i < lines.length ; ++i)
+    {
+        promises.push(axios.get(lines[i]));
+    }
+    return Promise.all(promises); // TODO: what are the requirements? should I have alternative implementations?
+}
+
 
 var csv_url = getParamValue("csv");
 
@@ -148,7 +181,18 @@ var csv_url = getParamValue("csv");
 //  when it arrives, create chart
 //   - which will contain all charts
 
-axios.get(csv_url)
-    .then(create_graph);
+function extension(name)
+{
+    var dot = name.search('[.]');
+    return name.substring(dot + 1);
+}
 
+if (extension(csv_url).toLocaleLowerCase() == "csv") {
+    axios.get(csv_url)
+        .then(create_graph);
+} else {
+    axios.get(csv_url)
+        .then(get_all_csv_files)
+        .then(create_graph);
+}
 
