@@ -7,6 +7,19 @@ Vue.component("line-chart", {
 });
 
 
+function str__a_minus_b(a, b)
+{
+    for (var i = Math.min(a.length, b.length) - 1; i >= 0 ; --i)
+    {
+        if (a[i] != b[i])
+        {
+            return a.substring(0, i + 1);
+        }
+    }
+    return '';
+}
+
+
 function parse_csv(data)
 {
     var lines = data.split('\n');
@@ -82,7 +95,7 @@ function create_graph(response)
     var date_start = parts[0][0];
     var date_end = parts[parts.length - 1][0];
     var time = parts.map(p => p[1]);
-    var labels = parts.map(p => p[0].split('.')[0] + ' ' + p[1]);
+    var labels = time;
     var colors = ['#f87979', '#88f939'];
     var datasets = [];
     var interesting_indices = [1, 4, 5];
@@ -116,7 +129,7 @@ function create_graph(response)
         },
         chartOptions: {
             responsive: true,
-            maintainAspectRatio: true, /* default */
+            maintainAspectRatio: false, /* default */
             /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
             tooltips: {
                 intersect: false,
@@ -126,9 +139,10 @@ function create_graph(response)
       },
       computed: {
         chart_title: function() {
-            var start = this.time[0];
             var last = this.time[this.time.length - 1];
-            return "XT Log: " + this.date_start + ' ' + start + ".." + ' ' + this.date_end + ' ' + last
+            var start = this.time[0];
+
+            return "XT Log: " + str__a_minus_b(this.date_start, this.date_end) + ' ' + ".." + ' ' + this.date_end 
                 + " (" + this.csv_version + ")";
         },
         second: function() {
