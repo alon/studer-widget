@@ -121,13 +121,13 @@ function create_graph(response)
     var datasets_voltage = [
         {
             label: data.titles[bsp_ubat],
-            color: '#f87979',
+            borderColor: '#ff0000',
             data: data[data.titles[bsp_ubat]],
             yAxisID: 'left-y-axis',
         },
         {
             label: data.titles[bsp_soc],
-            color: '#88f939',
+            borderColor: '#00ff00',
             data: data[data.titles[bsp_soc]],
             yAxisID: 'right-y-axis',
         },
@@ -157,19 +157,19 @@ function create_graph(response)
     var datasets_power = [
         {
             label: data.titles[solar_power_all],
-            color: '#f83939',
+            borderColor: '#0000ff',
             data: data[data.titles[solar_power_all]],
             yAxisID: 'left-y-axis',
         },
         {
             label: data.titles[bsp_battery_power],
-            color: '#f87979',
+            borderColor: '#ff00ff',
             data: data[data.titles[bsp_battery_power]],
             yAxisID: 'left-y-axis',
         },
         {
             label: data.titles[bsp_tbat],
-            color: '#88f939',
+            borderColor: '#00ffff',
             data: data[data.titles[bsp_tbat]],
             yAxisID: 'right-y-axis',
         },
