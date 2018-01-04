@@ -1,8 +1,9 @@
 Vue.component("line-chart", {
     extends: VueChartJs.Line,
+    props: ['data', 'options'],
     mixins: [VueChartJs.mixins.reactiveProp, VueChartJs.mixins.reactiveData],
     mounted() {
-        this.renderChart(this.chartData, this.chartOptions);
+        this.renderChart(this.data, this.options);
     }
 });
 
@@ -94,27 +95,91 @@ function create_graph(response)
     var parts = data.time.map(x => x.split(' '));
     var date_start = parts[0][0];
     var date_end = parts[parts.length - 1][0];
-    var time = parts.map(p => p[1]);
+    var time = parts.map(p => {
+        var day_month_year = p[0].split('.');
+        var hour_minute = p[1].split(':');
+        return new Date(day_month_year[2] + '-' + day_month_year[1] + '-' + day_month_year[0]
+            + 'T' + hour_minute[0] + ':' + hour_minute[1] + ':00.000');
+    });
     var labels = time;
-    var colors = ['#f87979', '#88f939'];
-    var datasets = [];
-    var interesting_indices = [1, 4, 5];
-    for (var i = 0 ; i < interesting_indices.length ; ++i) {
-        var title = data.titles[interesting_indices[i]];
-        datasets.push({
-            label: title,
-            color: colors[i % colors.length],
-            data: data[title]
-        });
-    }
-    window.Datasets = datasets;
+    // TODO: take 30 (BSP-Ubat [Vdc]) if it is non zero, otherwise take  14 (XT-Ubat [Vdc] - or maybe 1, XT-Ubat (MIN) [Vdc] - ask Elad)
+    var bsp_ubat = 30;
+    var bsp_ibat = 31;
+    var bsp_soc = 32;
+    var bsp_tbat = 33;
+    var solar_power_all = 34;
+    var bsp_battery_power_label = 'BSP Battery Power [kW]';
+    var bsp_battery_power = data.titles.length;
+    data.titles.push(bsp_battery_power_label);
+    var bsp_ibat_arr = data[data.titles[bsp_ibat]];
+    data[bsp_battery_power_label] = data[data.titles[bsp_ubat]].map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // units of kW
+    // TODO: bsp_soc with right Y axis (percents)
+    var datasets_voltage = [
+        {
+            label: data.titles[bsp_ubat],
+            color: '#f87979',
+            data: data[data.titles[bsp_ubat]],
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: data.titles[bsp_soc],
+            color: '#88f939',
+            data: data[data.titles[bsp_soc]],
+            yAxisID: 'right-y-axis',
+        },
+    ];
+    var datasets_power = [
+        {
+            label: data.titles[solar_power_all],
+            color: '#f83939',
+            data: data[data.titles[solar_power_all]],
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: data.titles[bsp_battery_power],
+            color: '#f87979',
+            data: data[data.titles[bsp_battery_power]],
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: data.titles[bsp_tbat],
+            color: '#88f939',
+            data: data[data.titles[bsp_tbat]],
+            yAxisID: 'right-y-axis',
+        },
+    ];
+    var scales = {
+        yAxes: [{
+            id: 'left-y-axis',
+            type: 'linear',
+            position: 'left',
+        }, {
+            id: 'right-y-axis',
+            type: 'linear',
+            position: 'right',
+        }],
+        xAxes: [{
+            type: 'time',
+            time: {
+                unit: 'day',
+                //displayFormats: {
+                //    //'day': 'DDD',
+                //},
+            }
+        }],
+    };
+
+    window.Datasets = [datasets_voltage, datasets_power];
     window.App = new Vue({
       el: '#app',
       template: '<div>\n' +
                 '  <p id="title">{{ chart_title }}</p>\n' +
-                '    <line-chart\n' +
-                '      :chart-data="chartData"\n' +
-                '      :chart-options="chartOptions"/>\n' +
+                '    <line-chart id="chart-voltage"\n' +
+                '      :data="chartDataVoltage"\n' +
+                '      :options="chartOptionsVoltage"/>\n' +
+                '    <line-chart id="chart-power"\n' +
+                '      :data="chartDataPower"\n' +
+                '      :options="chartOptionsPower"/>\n' +
                 '</div>'
       ,
       data: {
@@ -122,12 +187,12 @@ function create_graph(response)
         date_end: date_end,
         time: time,
         csv_version: data.csv_version,
-        chartData:
+        chartDataVoltage:
         {
-          labels: labels,
-          datasets: datasets,
+            labels: labels,
+          datasets: datasets_voltage,
         },
-        chartOptions: {
+        chartOptionsVoltage: {
             responsive: true,
             maintainAspectRatio: false, /* default */
             /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
@@ -135,6 +200,22 @@ function create_graph(response)
                 intersect: false,
                 mode: 'index',
             },
+            scales: scales,
+        },
+        chartDataPower:
+        {
+            labels: labels,
+            datasets: datasets_power,
+        },
+        chartOptionsPower: {
+            responsive: true,
+            maintainAspectRatio: false, /* default */
+            /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
+            tooltips: {
+                intersect: false,
+                mode: 'index',
+            },
+            scales: scales,
         },
       },
       computed: {
