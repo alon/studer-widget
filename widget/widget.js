@@ -103,6 +103,7 @@ function create_graph(response)
     });
     var labels = time;
     // TODO: take 30 (BSP-Ubat [Vdc]) if it is non zero, otherwise take  14 (XT-Ubat [Vdc] - or maybe 1, XT-Ubat (MIN) [Vdc] - ask Elad)
+    // TODO: indices are not fixed, use strings to find index
     var bsp_ubat = 30;
     var bsp_ibat = 31;
     var bsp_soc = 32;
@@ -110,6 +111,9 @@ function create_graph(response)
     var solar_power_all = 34;
     var bsp_battery_power_label = 'BSP Battery Power [kW]';
     var bsp_battery_power = data.titles.length;
+    var bsp_ubat_arr = data[data.titles[bsp_ubat]];
+    var bsp_ubat_min = Math.min.apply(Math, bsp_ubat_arr);
+    var bsp_ubat_max = Math.max.apply(Math, bsp_ubat_arr);
     data.titles.push(bsp_battery_power_label);
     var bsp_ibat_arr = data[data.titles[bsp_ibat]];
     data[bsp_battery_power_label] = data[data.titles[bsp_ubat]].map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // units of kW
@@ -128,6 +132,28 @@ function create_graph(response)
             yAxisID: 'right-y-axis',
         },
     ];
+    var scales_voltage = {
+        yAxes: [{
+            id: 'left-y-axis',
+            type: 'linear',
+            position: 'left',
+            ticks: {
+                min: bsp_ubat_min,
+                max: bsp_ubat_max,
+            },
+        }, {
+            id: 'right-y-axis',
+            type: 'linear',
+            position: 'right',
+        }],
+        xAxes: [{
+            type: 'time',
+            time: {
+                unit: 'day',
+            }
+        }],
+    };
+
     var datasets_power = [
         {
             label: data.titles[solar_power_all],
@@ -148,7 +174,7 @@ function create_graph(response)
             yAxisID: 'right-y-axis',
         },
     ];
-    var scales = {
+    var scales_power = {
         yAxes: [{
             id: 'left-y-axis',
             type: 'linear',
@@ -162,9 +188,6 @@ function create_graph(response)
             type: 'time',
             time: {
                 unit: 'day',
-                //displayFormats: {
-                //    //'day': 'DDD',
-                //},
             }
         }],
     };
@@ -200,7 +223,7 @@ function create_graph(response)
                 intersect: false,
                 mode: 'index',
             },
-            scales: scales,
+            scales: scales_voltage,
         },
         chartDataPower:
         {
@@ -215,7 +238,7 @@ function create_graph(response)
                 intersect: false,
                 mode: 'index',
             },
-            scales: scales,
+            scales: scales_power,
         },
       },
       computed: {
