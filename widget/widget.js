@@ -1,11 +1,11 @@
-Vue.component("line-chart", {
-    extends: VueChartJs.Line,
-    props: ['data', 'options'],
-    mixins: [VueChartJs.mixins.reactiveProp, VueChartJs.mixins.reactiveData],
-    mounted() {
-        this.renderChart(this.data, this.options);
-    }
-});
+import line_chart from './line_chart';
+import Vue from 'vue';
+import moment from 'moment';
+import axios from 'axios';
+import Chart from 'chart.js';
+import VueChartJs from 'vue-chartjs';
+
+"use strict";
 
 
 function str__a_minus_b(a, b)
@@ -88,9 +88,9 @@ function merge_csv(csvs)
 
 function create_graph(response)
 {
-    G_Response = response; // for debugging
+    //G_Response = response; // for debugging
     var csvs = response.map(res => parse_csv(res.data));
-    G_CSVS = csvs;
+    //G_CSVS = csvs;
     var data = merge_csv(csvs);
     var parts = data.time.map(x => x.split(' '));
     var date_start = parts[0][0];
