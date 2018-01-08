@@ -102,6 +102,51 @@ function replace_high(c, rep)
     return c;
 }
 
+/**
+ * Studer headers reference:
+
+XT-Ubat- (MIN) [Vdc]
+XT-Uin [Vac]
+XT-Iin [Aac]
+XT-Pout [kVA]
+XT-Pout+ [kVA]
+XT-Fout [Hz]
+XT-Fin [Hz]
+XT-Phase []
+XT-Mode []
+XT-Transfert []
+XT-RME []
+XT-Aux 1 []
+XT-Aux 2 []
+XT-Ubat [Vdc]
+XT-Ibat [Adc]
+XT-Pin a [kW]
+XT-Pout a [kW]
+XT-Dev1+ (MAX) []
+
+VT-PsoM [kW]
+VT-Mode []
+VT-Dev1 []
+VT-UpvM [Vdc]
+VT-IbaM [Adc]
+VT-UbaM [Vdc]
+VT-Phas []
+VT-RME []
+VT-Aux 1 []
+VT-Aux 2 []
+
+BSP-Ubat [Vdc]
+BSP-Ibat [Adc]
+BSP-SOC [%]
+BSP-Tbat [<B0>C]
+
+Solar power (ALL) [kW]
+
+DEV XT-DBG1 []
+DEV VT-locEr []
+DEV SYS MSG
+DEV SYS SCOM ERR
+ */
 
 function extract_datasets(response, average_num)
 {
@@ -118,27 +163,44 @@ function extract_datasets(response, average_num)
     });
     var time = decimate_first_of(time_full, average_num);
     var labels = time;
-    // TODO: take 30 (BSP-Ubat [Vdc]) if it is non zero, otherwise take  14 (XT-Ubat [Vdc] - or maybe 1, XT-Ubat (MIN) [Vdc] - ask Elad)
-    // TODO: indices are not fixed, use strings to find index
-    var xt_ubat = 14;
-    var bsp_ubat = 30;
-    var bsp_ibat = 31;
-    var bsp_soc = 32;
-    var bsp_tbat = 33;
-    var solar_power_all = 34;
+    var titles = data.titles;
+    function indexof(s) {
+        for (var i = 0 ; i < titles.length ; ++i)
+        {
+            if (titles[i].substr(0, s.length) == s) { return i; }
+        }
+        console.error('could not find ' + s + ' in titles: ' + titles);
+        return 0;
+    }
+    var xt_ubat = indexof('XT-Ubat');
+    var xt_ibat = indexof('XT-Ibat');
+    var xt_pin = indexof('XT-Pin');
+    var xt_pout = indexof('XT-Pout');
+    var bsp_ubat = indexof('BSP-Ubat');
+    var bsp_ibat = indexof('BSP-Ibat');
+    var bsp_soc = indexof('BSP-SOC');
+    var bsp_tbat = indexof('BSP-Tbat');
+    var solar_power_all = indexof('Solar power (ALL)');
 
-    var xt_ubat_arr = average(data[data.titles[xt_ubat]].map(Number.parseFloat), average_num);
-    var bsp_battery_power_label = 'BSP Battery Power [kW]';
+    var tofloat_avg = title => average(data[title].map(Number.parseFloat), average_num);
+
+    var xt_ubat_arr = tofloat_avg(data.titles[xt_ubat]);
+    var xt_pin_title = data.titles[xt_pin];
+    var xt_pout_title = data.titles[xt_pout];
+    var xt_pin_arr = tofloat_avg(xt_pin_title);
+    var xt_pout_arr = tofloat_avg(xt_pout_title);
+    var bsp_battery_power_title = 'BSP Battery Power [kW]';
     var bsp_battery_power = data.titles.length;
     var bsp_ubat_arr = data[data.titles[bsp_ubat]].map(Number.parseFloat);
     var bsp_ubat_min = Math.min.apply(Math, bsp_ubat_arr);
     var bsp_ubat_max = Math.max.apply(Math, bsp_ubat_arr);
     bsp_ubat_arr = average(bsp_ubat_arr, average_num);
-    data.titles.push(bsp_battery_power_label);
-    var bsp_ibat_arr = average(data[data.titles[bsp_ibat]].map(Number.parseFloat), average_num);
-    data[bsp_battery_power_label] = bsp_ubat_arr.map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // units of kW
+    data.titles.push(bsp_battery_power_title);
+    var bsp_ibat_arr = tofloat_avg(data.titles[bsp_ibat]);
+    var bsp_battery_power_arr = bsp_ubat_arr.map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // [kW]
+    data[bsp_battery_power_title] = bsp_battery_power_arr;
     // TODO: bsp_soc with right Y axis (percents)
-    var bsp_soc_arr = average(data[data.titles[bsp_soc]].map(Number.parseFloat), average_num);
+    var bsp_soc_arr = tofloat_avg(data.titles[bsp_soc]);
     function add_shared_attrs(vd) {
         return vd.map(d => Object.assign({
                 pointRadius: 0,
@@ -231,15 +293,27 @@ function extract_datasets(response, average_num)
     // Graph 2: (Y) P-ACin sum, P-ACout sum, P-Solar sum; (X) Three days
     var datasets_power = add_shared_attrs([
         {
-            label: data.titles[solar_power_all],
-            borderColor: '#0000ff',
-            data: average(data[data.titles[solar_power_all]].map(Number.parseFloat), average_num),
+            label: xt_pin_title,
+            borderColor: '#ff00ff',
+            data: xt_pin_arr,
             yAxisID: 'left-y-axis',
         },
         {
-            label: data.titles[bsp_battery_power],
+            label: xt_pout_title,
             borderColor: '#ff00ff',
-            data: data[data.titles[bsp_battery_power]],
+            data: xt_pout_arr,
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: bsp_battery_power_title,
+            borderColor: '#ff00ff',
+            data: bsp_battery_power_arr,
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: data.titles[solar_power_all],
+            borderColor: '#0000ff',
+            data: tofloat_avg(data.titles[solar_power_all]),
             yAxisID: 'left-y-axis',
         },
     ]);
@@ -281,7 +355,7 @@ function extract_datasets(response, average_num)
         {
             label: data.titles[bsp_tbat].replace(/./g, x => replace_high(x, '')),
             borderColor: '#00ffff',
-            data: average(data[data.titles[bsp_tbat]].map(Number.parseFloat), average_num),
+            data: tofloat_avg(data.titles[bsp_tbat]),
             yAxisID: 'right-y-axis',
         },
     ]);
