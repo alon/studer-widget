@@ -9,18 +9,11 @@ import extract_datasets from './process';
 function create_graph(response, average_num)
 {
     let d = extract_datasets(response, average_num);
-    let datasets_voltage = d.datasets_voltage;
-    let datasets_power = d.datasets_power;
     let labels = d.labels;
     let csv_version = d.csv_version;
     let time = d.time;
     let date_start = d.date_start;
     let date_end = d.date_end;
-    let scales_voltage = d.scales_voltage;
-    let scales_power = d.scales_power;
-
-    window.Datasets = [datasets_voltage, datasets_power];
-    // TODO: pass datasets to component
 
     window.App = new Vue({
       el: '#app',
@@ -33,12 +26,12 @@ function create_graph(response, average_num)
                 date_end: date_end,
                 time: time,
                 csv_version: csv_version,
-                charts: [
-                    {
-                        key: "voltage",
+                charts: d.charts.map(function (datum) {
+                    return {
+                        key: datum.title,
                         data: {
                             labels: labels,
-                            datasets: datasets_voltage,
+                            datasets: datum.datasets,
                         },
                         options: {
                             responsive: true,
@@ -48,27 +41,9 @@ function create_graph(response, average_num)
                                 intersect: false,
                                 mode: 'index',
                             },
-                            scales: scales_voltage,
+                            scales: datum.scales,
                         }
-                    },
-                    {
-                        key: "power",
-                        data: {
-                            labels: labels,
-                            datasets: datasets_power,
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false, /* default */
-                            /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
-                            tooltips: {
-                                intersect: false,
-                                mode: 'index',
-                            },
-                            scales: scales_power,
-                        }
-                    },
-                ]
+                    }; }),
             }},
             [] /* array of children */);
       },

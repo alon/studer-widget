@@ -208,15 +208,23 @@ function extract_datasets(response, average_num)
         }],
     };
     return {
-        datasets_voltage: datasets_voltage,
-        datasets_power: datasets_power,
+        charts: [
+            {
+                title: "voltage",
+                datasets: datasets_voltage,
+                scales: scales_voltage,
+            },
+            {
+                title: "power",
+                datasets: datasets_power,
+                scales: scales_power,
+            }
+        ],
         labels: labels,
         time: time,
         date_start: date_start,
         date_end: date_end,
         csv_version: data.csv_version,
-        scales_power: scales_power,
-        scales_voltage: scales_voltage,
     };
 }
 
