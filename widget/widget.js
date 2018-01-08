@@ -6,9 +6,9 @@ import extract_datasets from './process';
 
 "use strict";
 
-function create_graph(response)
+function create_graph(response, average_num)
 {
-    let d = extract_datasets(response);
+    let d = extract_datasets(response, average_num);
     let datasets_voltage = d.datasets_voltage;
     let datasets_power = d.datasets_power;
     let labels = d.labels;
@@ -28,6 +28,7 @@ function create_graph(response)
           return createElement(
             'app' /* tag name */,
             {props: {
+                average_num: average_num,
                 date_start: date_start,
                 date_end: date_end,
                 time: time,
@@ -99,7 +100,8 @@ function get_all_csv_files(response)
 }
 
 
-var csv_url = getParamValue("csv");
+let csv_url = getParamValue("csv");
+let average_num = Number.parseFloat(getParamValue("average")) || 10;
 
 // Not sure: show a "waiting" thing first?
 // Right now:
@@ -116,10 +118,10 @@ function extension(name)
 
 if (extension(csv_url).toLocaleLowerCase() == "csv") {
     axios.get(csv_url)
-        .then(create_graph);
+        .then(data => create_graph(data, average_num));
 } else {
     axios.get(csv_url)
         .then(get_all_csv_files)
-        .then(create_graph);
+        .then(data => create_graph(data, average_num));
 }
 

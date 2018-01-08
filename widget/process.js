@@ -66,7 +66,34 @@ function merge_csv(csvs)
 }
 
 
-function extract_datasets(response)
+function decimate_first_of(data, count)
+{
+    var ret = [];
+    for (var i = 0 ; i < data.length ; i += count)
+    {
+        ret.push(data[i]);
+    }
+    return ret;
+}
+
+// assumes data is rounded to <count> chunks, padded with zeros
+function average(data, count)
+{
+    var ret = [];
+    for (var i = 0 ; i < data.length ; i += count)
+    {
+        var sum = 0;
+        for (var j = i ; j < i + count ; ++j)
+        {
+            sum += data[j];
+        }
+        ret.push(sum / count);
+    }
+    return ret;
+}
+
+
+function extract_datasets(response, average_num)
 {
     //G_Response = response; // for debugging
     var csvs = response.map(res => parse_csv(res.data));
@@ -75,12 +102,12 @@ function extract_datasets(response)
     var parts = data.time.map(x => x.split(' '));
     var date_start = parts[0][0];
     var date_end = parts[parts.length - 1][0];
-    var time = parts.map(p => {
+    var time = decimate_first_of(parts.map(p => {
         var day_month_year = p[0].split('.');
         var hour_minute = p[1].split(':');
         return new Date(day_month_year[2] + '-' + day_month_year[1] + '-' + day_month_year[0]
             + 'T' + hour_minute[0] + ':' + hour_minute[1] + ':00.000');
-    });
+    }), average_num);
     var labels = time;
     // TODO: take 30 (BSP-Ubat [Vdc]) if it is non zero, otherwise take  14 (XT-Ubat [Vdc] - or maybe 1, XT-Ubat (MIN) [Vdc] - ask Elad)
     // TODO: indices are not fixed, use strings to find index
@@ -91,24 +118,26 @@ function extract_datasets(response)
     var solar_power_all = 34;
     var bsp_battery_power_label = 'BSP Battery Power [kW]';
     var bsp_battery_power = data.titles.length;
-    var bsp_ubat_arr = data[data.titles[bsp_ubat]];
+    var bsp_ubat_arr = data[data.titles[bsp_ubat]].map(Number.parseFloat);
     var bsp_ubat_min = Math.min.apply(Math, bsp_ubat_arr);
     var bsp_ubat_max = Math.max.apply(Math, bsp_ubat_arr);
+    bsp_ubat_arr = average(bsp_ubat_arr, average_num);
     data.titles.push(bsp_battery_power_label);
     var bsp_ibat_arr = data[data.titles[bsp_ibat]];
     data[bsp_battery_power_label] = data[data.titles[bsp_ubat]].map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // units of kW
     // TODO: bsp_soc with right Y axis (percents)
+    var bsp_soc_arr = average(data[data.titles[bsp_soc]].map(Number.parseFloat), average_num);
     var datasets_voltage = [
         {
             label: data.titles[bsp_ubat],
             borderColor: '#ff0000',
-            data: data[data.titles[bsp_ubat]],
+            data: bsp_ubat_arr,
             yAxisID: 'left-y-axis',
         },
         {
             label: data.titles[bsp_soc],
             borderColor: '#00ff00',
-            data: data[data.titles[bsp_soc]],
+            data: bsp_soc_arr,
             yAxisID: 'right-y-axis',
         },
     ];
@@ -138,19 +167,19 @@ function extract_datasets(response)
         {
             label: data.titles[solar_power_all],
             borderColor: '#0000ff',
-            data: data[data.titles[solar_power_all]],
+            data: average(data[data.titles[solar_power_all]].map(Number.parseFloat), average_num),
             yAxisID: 'left-y-axis',
         },
         {
             label: data.titles[bsp_battery_power],
             borderColor: '#ff00ff',
-            data: data[data.titles[bsp_battery_power]],
+            data: average(data[data.titles[bsp_battery_power]].map(Number.parseFloat), average_num),
             yAxisID: 'left-y-axis',
         },
         {
             label: data.titles[bsp_tbat],
             borderColor: '#00ffff',
-            data: data[data.titles[bsp_tbat]],
+            data: average(data[data.titles[bsp_tbat]].map(Number.parseFloat), average_num),
             yAxisID: 'right-y-axis',
         },
     ];

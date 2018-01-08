@@ -6,7 +6,7 @@ import { Line } from 'vue-chartjs';
 Vue.component("line-chart", {
     extends: Line,
     props: ['data', 'options'],
-    mounted() {
+    mounted: function () {
         this.renderChart(this.data, this.options);
     }
 });

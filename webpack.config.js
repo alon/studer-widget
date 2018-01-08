@@ -1,7 +1,10 @@
 'use strict'
+
 const path = require('path');
-var webpack = require('webpack');
-var vueLoaderConfig = {
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+const webpack = require('webpack');
+
+const vueLoaderConfig = {
   //loaders: utils.cssLoaders({
   //  sourceMap: sourceMapEnabled,
   //  extract: isProduction
@@ -16,11 +19,10 @@ var vueLoaderConfig = {
   }
 };
 
-module.exports = {
- entry: {
-     app: './widget/widget.js',
- },
- plugins: [
+let plugins_prod = [
+    new UglifyJsPlugin({
+        sourceMap: true,
+    }),
  /*
     new webpack.DefinePlugin({
         'process.env': {
@@ -28,7 +30,15 @@ module.exports = {
         }
     }),
     */
- ],
+ ];
+let plugins_dev = []
+let plugins = plugins_dev;
+
+module.exports = {
+ entry: {
+     app: './widget/widget.js',
+ },
+ plugins: plugins,
  resolve: {
    extensions: ['.js', '.vue', '.json'],
    // TODO: avoid this - should be able to ditch the compiler if I can only figure how to pass the csv computation to the app component.
