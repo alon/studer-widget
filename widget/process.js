@@ -143,19 +143,20 @@ function extract_datasets(response, average_num)
                 fill: false,
         }, d));
     };
-
-    /*
-     * Graph 1: (Y1) battery voltage from BSP, U-Bat max from XT, constant line from parameters P1108, P1140, P1156, P1164; (Y2) BSP Bat SOC; (X) three days
-     * Graph 2: (Y) P-ACin sum, P-ACout sum, P-Solar sum; (X) Three days
-     * Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
-     * Graph 4: (Y1) BSP I-Bat; (Y2) BSP Tbat; (X) Three days
-     */
-    // lines for voltage graph
     let lines = csvs[0].trailer.filter(x => x.length >= 2 && x[0].substr !== undefined && x[0].substr(0, 1) == 'P')
         .reduce((acc, cur, i) => {
             acc[cur[0]] = cur[1];
             return acc;
         }, {});
+
+    let charts = [];
+
+    // Graph 1:
+    // (Y1) battery voltage from BSP
+    //      U-Bat max from XT
+    // constant line from parameters P1108, P1140, P1156, P1164
+    // (Y2) BSP Bat SOC
+    // (X) three days
     let line_datasets = ['P1108', 'P1140', 'P1156', 'P1164']
         .filter(name => lines[name] !== undefined)
         .map((name, i) => {
@@ -203,7 +204,22 @@ function extract_datasets(response, average_num)
             }
         }],
     };
+    charts.push({
+        title: "voltage",
+        datasets: datasets_voltage,
+        scales: scales_voltage,
+        options: {
+            legend: {
+                labels: {
+                    filter: (item, data) => {
+                        return item.text.substr(0, 1) != 'P';
+                    },
+                },
+            },
+        },
+    });
 
+    // Graph 2: (Y) P-ACin sum, P-ACout sum, P-Solar sum; (X) Three days
     var datasets_power = add_shared_attrs([
         {
             label: data.titles[solar_power_all],
@@ -241,19 +257,18 @@ function extract_datasets(response, average_num)
             }
         }],
     };
+
+    charts.push({
+        title: "power",
+        datasets: datasets_power,
+        scales: scales_power,
+    });
+
+    // Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
+    // Graph 4: (Y1) BSP I-Bat; (Y2) BSP Tbat; (X) Three days
+
     return {
-        charts: [
-            {
-                title: "voltage",
-                datasets: datasets_voltage,
-                scales: scales_voltage,
-            },
-            {
-                title: "power",
-                datasets: datasets_power,
-                scales: scales_power,
-            }
-        ],
+        charts: charts,
         labels: labels,
         time: time,
         date_start: date_start,

@@ -33,7 +33,7 @@ function create_graph(response, average_num)
                             labels: labels,
                             datasets: datum.datasets,
                         },
-                        options: {
+                        options: Object.assign(datum.options || {}, {
                             responsive: true,
                             maintainAspectRatio: false, /* default */
                             /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
@@ -54,7 +54,7 @@ function create_graph(response, average_num)
                                 animationDuration: 0,
                             },
                             responsiveAnimationDuration: 0,
-                        }
+                        }),
                     }; }),
             }},
             [] /* array of children */);

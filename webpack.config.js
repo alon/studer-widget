@@ -25,13 +25,11 @@ let plugins_prod = [
     new UglifyJsPlugin({
         sourceMap: true,
     }),
- /*
     new webpack.DefinePlugin({
         'process.env': {
             NODE_ENV: '"production"',
         }
     }),
-    */
  ];
 let plugins_dev = [];
 let plugins = process.env.NODE_ENV == 'production' ? plugins_prod : plugins_dev;
