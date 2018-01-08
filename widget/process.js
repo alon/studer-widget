@@ -102,12 +102,13 @@ function extract_datasets(response, average_num)
     var parts = data.time.map(x => x.split(' '));
     var date_start = parts[0][0];
     var date_end = parts[parts.length - 1][0];
-    var time = decimate_first_of(parts.map(p => {
+    var time_full = parts.map(p => {
         var day_month_year = p[0].split('.');
         var hour_minute = p[1].split(':');
         return new Date(day_month_year[2] + '-' + day_month_year[1] + '-' + day_month_year[0]
             + 'T' + hour_minute[0] + ':' + hour_minute[1] + ':00.000');
-    }), average_num);
+    });
+    var time = decimate_first_of(time_full, average_num);
     var labels = time;
     // TODO: take 30 (BSP-Ubat [Vdc]) if it is non zero, otherwise take  14 (XT-Ubat [Vdc] - or maybe 1, XT-Ubat (MIN) [Vdc] - ask Elad)
     // TODO: indices are not fixed, use strings to find index
@@ -123,8 +124,8 @@ function extract_datasets(response, average_num)
     var bsp_ubat_max = Math.max.apply(Math, bsp_ubat_arr);
     bsp_ubat_arr = average(bsp_ubat_arr, average_num);
     data.titles.push(bsp_battery_power_label);
-    var bsp_ibat_arr = data[data.titles[bsp_ibat]];
-    data[bsp_battery_power_label] = data[data.titles[bsp_ubat]].map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // units of kW
+    var bsp_ibat_arr = average(data[data.titles[bsp_ibat]].map(Number.parseFloat), average_num);
+    data[bsp_battery_power_label] = bsp_ubat_arr.map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // units of kW
     // TODO: bsp_soc with right Y axis (percents)
     var bsp_soc_arr = average(data[data.titles[bsp_soc]].map(Number.parseFloat), average_num);
     function add_shared_attrs(vd) {
@@ -180,7 +181,7 @@ function extract_datasets(response, average_num)
         {
             label: data.titles[bsp_battery_power],
             borderColor: '#ff00ff',
-            data: average(data[data.titles[bsp_battery_power]].map(Number.parseFloat), average_num),
+            data: data[data.titles[bsp_battery_power]],
             yAxisID: 'left-y-axis',
         },
         {
