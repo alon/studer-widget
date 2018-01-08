@@ -31,8 +31,8 @@ let plugins_prod = [
     }),
     */
  ];
-let plugins_dev = []
-let plugins = plugins_dev;
+let plugins_dev = [];
+let plugins = plugins_prod;
 
 module.exports = {
  entry: {
