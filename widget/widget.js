@@ -42,6 +42,18 @@ function create_graph(response, average_num)
                                 mode: 'index',
                             },
                             scales: datum.scales,
+                            elements: {
+                                line: {
+                                    tension: 0, // disables bezier curves
+                                },
+                            },
+                            animation: {
+                                duration: 0,
+                            },
+                            hover: {
+                                animationDuration: 0,
+                            },
+                            responsiveAnimationDuration: 0,
                         }
                     }; }),
             }},

@@ -93,11 +93,19 @@ function average(data, count)
 }
 
 
+function replace_high(c, rep)
+{
+    if (c.charCodeAt(0) >= 65533)
+    {
+        return rep;
+    }
+    return c;
+}
+
+
 function extract_datasets(response, average_num)
 {
-    //G_Response = response; // for debugging
     var csvs = response.map(res => parse_csv(res.data));
-    //G_CSVS = csvs;
     var data = merge_csv(csvs);
     var parts = data.time.map(x => x.split(' '));
     var date_start = parts[0][0];
@@ -132,8 +140,33 @@ function extract_datasets(response, average_num)
         return vd.map(d => Object.assign({
                 pointRadius: 0,
                 borderWidth: 1,
+                fill: false,
         }, d));
     };
+
+    /*
+     * Graph 1: (Y1) battery voltage from BSP, U-Bat max from XT, constant line from parameters P1108, P1140, P1156, P1164; (Y2) BSP Bat SOC; (X) three days
+     * Graph 2: (Y) P-ACin sum, P-ACout sum, P-Solar sum; (X) Three days
+     * Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
+     * Graph 4: (Y1) BSP I-Bat; (Y2) BSP Tbat; (X) Three days
+     */
+    // lines for voltage graph
+    let lines = csvs[0].trailer.filter(x => x.length >= 2 && x[0].substr !== undefined && x[0].substr(0, 1) == 'P')
+        .reduce((acc, cur, i) => {
+            acc[cur[0]] = cur[1];
+            return acc;
+        }, {});
+    let line_datasets = ['P1108', 'P1140', 'P1156', 'P1164']
+        .filter(name => lines[name] !== undefined)
+        .map((name, i) => {
+            let val = lines[name];
+            return {
+                label: name,
+                data: labels.map(unused => val),
+                borderColor: 'rgb(' + i * 63 + ', 0, 0)',
+                yAxisID: 'left-y-axis',
+            };
+        });
 
     var datasets_voltage = add_shared_attrs([
         {
@@ -148,7 +181,7 @@ function extract_datasets(response, average_num)
             data: bsp_soc_arr,
             yAxisID: 'right-y-axis',
         },
-    ]);
+    ].concat(line_datasets));
     var scales_voltage = {
         yAxes: [{
             id: 'left-y-axis',
@@ -185,7 +218,7 @@ function extract_datasets(response, average_num)
             yAxisID: 'left-y-axis',
         },
         {
-            label: data.titles[bsp_tbat],
+            label: data.titles[bsp_tbat].replace(/./g, x => replace_high(x, '')),
             borderColor: '#00ffff',
             data: average(data[data.titles[bsp_tbat]].map(Number.parseFloat), average_num),
             yAxisID: 'right-y-axis',
