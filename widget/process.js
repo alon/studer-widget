@@ -242,12 +242,6 @@ function extract_datasets(response, average_num)
             data: data[data.titles[bsp_battery_power]],
             yAxisID: 'left-y-axis',
         },
-        {
-            label: data.titles[bsp_tbat].replace(/./g, x => replace_high(x, '')),
-            borderColor: '#00ffff',
-            data: average(data[data.titles[bsp_tbat]].map(Number.parseFloat), average_num),
-            yAxisID: 'right-y-axis',
-        },
     ]);
     var scales_power = {
         yAxes: [{
@@ -274,7 +268,45 @@ function extract_datasets(response, average_num)
     });
 
     // Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
+    // TODO
+
     // Graph 4: (Y1) BSP I-Bat; (Y2) BSP Tbat; (X) Three days
+    var datasets_i_tmp = add_shared_attrs([
+        {
+            label: data.titles[bsp_ibat],
+            borderColor: '#0000ff',
+            data: bsp_ibat_arr,
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: data.titles[bsp_tbat].replace(/./g, x => replace_high(x, '')),
+            borderColor: '#00ffff',
+            data: average(data[data.titles[bsp_tbat]].map(Number.parseFloat), average_num),
+            yAxisID: 'right-y-axis',
+        },
+    ]);
+    var scales_i_tmp = {
+        yAxes: [{
+            id: 'left-y-axis',
+            type: 'linear',
+            position: 'left',
+        }, {
+            id: 'right-y-axis',
+            type: 'linear',
+            position: 'right',
+        }],
+        xAxes: [{
+            type: 'time',
+            time: {
+                unit: 'day',
+            }
+        }],
+    };
+    charts.push({
+        title: "bat-I-temp",
+        datasets: datasets_i_tmp,
+        scales: scales_i_tmp,
+    });
 
     return {
         charts: charts,
