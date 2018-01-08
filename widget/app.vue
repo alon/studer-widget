@@ -2,12 +2,11 @@
 <template>
 <div>
   <p id="title">{{ chart_title }}</p>
-    <line-chart id="chart-voltage"
-      :data="chartDataVoltage"
-      :options="chartOptionsVoltage"/>
-    <line-chart id="chart-power"
-      :data="chartDataPower"
-      :options="chartOptionsPower"/>
+    <line-chart v-for="chart in charts"
+      :key="chart.key"
+      :data="chart.data"
+      :options="chart.options"/>
+    </line-chart>
 </div>
 </template>
 <script>
@@ -21,10 +20,7 @@ export default {
     'time',
     'date_start',
     'date_end',
-    'chartDataVoltage',
-    'chartDataPower',
-    'chartOptionsVoltage',
-    'chartOptionsPower'
+    'charts',
   ],
   computed: {
     chart_title: function() {

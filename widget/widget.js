@@ -33,36 +33,42 @@ function create_graph(response, average_num)
                 date_end: date_end,
                 time: time,
                 csv_version: csv_version,
-                chartDataVoltage:
-                {
-                    labels: labels,
-                  datasets: datasets_voltage,
-                },
-                chartOptionsVoltage: {
-                    responsive: true,
-                    maintainAspectRatio: false, /* default */
-                    /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
-                    tooltips: {
-                        intersect: false,
-                        mode: 'index',
+                charts: [
+                    {
+                        key: "voltage",
+                        data: {
+                            labels: labels,
+                            datasets: datasets_voltage,
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false, /* default */
+                            /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
+                            tooltips: {
+                                intersect: false,
+                                mode: 'index',
+                            },
+                            scales: scales_voltage,
+                        }
                     },
-                    scales: scales_voltage,
-                },
-                chartDataPower:
-                {
-                    labels: labels,
-                    datasets: datasets_power,
-                },
-                chartOptionsPower: {
-                    responsive: true,
-                    maintainAspectRatio: false, /* default */
-                    /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
-                    tooltips: {
-                        intersect: false,
-                        mode: 'index',
+                    {
+                        key: "power",
+                        data: {
+                            labels: labels,
+                            datasets: datasets_power,
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false, /* default */
+                            /* TODO: figure out how to have a vertical cursor, i.e. always highlight points on the current time cursor is on (no need to be near on the y-axis) */
+                            tooltips: {
+                                intersect: false,
+                                mode: 'index',
+                            },
+                            scales: scales_power,
+                        }
                     },
-                    scales: scales_power,
-                },
+                ]
             }},
             [] /* array of children */);
       },
