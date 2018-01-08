@@ -120,11 +120,14 @@ function extract_datasets(response, average_num)
     var labels = time;
     // TODO: take 30 (BSP-Ubat [Vdc]) if it is non zero, otherwise take  14 (XT-Ubat [Vdc] - or maybe 1, XT-Ubat (MIN) [Vdc] - ask Elad)
     // TODO: indices are not fixed, use strings to find index
+    var xt_ubat = 14;
     var bsp_ubat = 30;
     var bsp_ibat = 31;
     var bsp_soc = 32;
     var bsp_tbat = 33;
     var solar_power_all = 34;
+
+    var xt_ubat_arr = average(data[data.titles[xt_ubat]].map(Number.parseFloat), average_num);
     var bsp_battery_power_label = 'BSP Battery Power [kW]';
     var bsp_battery_power = data.titles.length;
     var bsp_ubat_arr = data[data.titles[bsp_ubat]].map(Number.parseFloat);
@@ -174,6 +177,12 @@ function extract_datasets(response, average_num)
             label: data.titles[bsp_ubat],
             borderColor: '#ff0000',
             data: bsp_ubat_arr,
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: data.titles[xt_ubat],
+            borderColor: '#ff8000',
+            data: xt_ubat_arr,
             yAxisID: 'left-y-axis',
         },
         {
