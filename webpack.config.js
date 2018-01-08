@@ -31,6 +31,12 @@ module.exports = {
  ],
  resolve: {
    extensions: ['.js', '.vue', '.json'],
+   // TODO: avoid this - should be able to ditch the compiler if I can only figure how to pass the csv computation to the app component.
+   /*
+   alias: {
+     'vue$': 'vue/dist/vue.esm.js' // 'vue/dist/vue.common.js' for webpack 1
+   }
+   */
  },
  output: {
      path: path.resolve(__dirname, 'widget'),

@@ -1,5 +1,8 @@
+# vim: filetype=javascript
 <script>
 import Vue from 'vue';
+import VueChartJs from 'vue-chartjs';
+import Chart from 'chart.js'; // not sure this is required
 
 Vue.component("line-chart", {
     extends: VueChartJs.Line,
