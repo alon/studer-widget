@@ -1,2 +1,2 @@
 #!/bin/bash
-scp widget/widget.js widget/widget.html widget/widget.js cometmelogger@azizazt:logs/center/
+scp widget/widget.bundle.js widget/widget.html cometmelogger@azizazt:logs/center/
