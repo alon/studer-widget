@@ -4,7 +4,8 @@
   "description": "vue js based charting widget for csv logs produced by Studer remote control RCC-02 unit",
   "main": "main.js",
   "scripts": {
-    "build": "webpack"
+    "dev": "NODE_ENV=development webpack --progress --colors",
+    "build": "NODE_ENV=production webpack --progress --colors"
   },
   "author": "Alon Levy <alon@pobox.com>",
   "license": "ISC",

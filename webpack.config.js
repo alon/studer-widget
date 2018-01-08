@@ -1,5 +1,7 @@
 'use strict'
 
+console.log('node environment is: ' + process.env.NODE_ENV);
+
 const path = require('path');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 const webpack = require('webpack');
@@ -32,7 +34,7 @@ let plugins_prod = [
     */
  ];
 let plugins_dev = [];
-let plugins = plugins_prod;
+let plugins = process.env.NODE_ENV == 'production' ? plugins_prod : plugins_dev;
 
 module.exports = {
  entry: {
