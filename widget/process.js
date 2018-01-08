@@ -127,7 +127,14 @@ function extract_datasets(response, average_num)
     data[bsp_battery_power_label] = data[data.titles[bsp_ubat]].map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // units of kW
     // TODO: bsp_soc with right Y axis (percents)
     var bsp_soc_arr = average(data[data.titles[bsp_soc]].map(Number.parseFloat), average_num);
-    var datasets_voltage = [
+    function add_shared_attrs(vd) {
+        return vd.map(d => Object.assign({
+                pointRadius: 0,
+                borderWidth: 1,
+        }, d));
+    };
+
+    var datasets_voltage = add_shared_attrs([
         {
             label: data.titles[bsp_ubat],
             borderColor: '#ff0000',
@@ -140,7 +147,7 @@ function extract_datasets(response, average_num)
             data: bsp_soc_arr,
             yAxisID: 'right-y-axis',
         },
-    ];
+    ]);
     var scales_voltage = {
         yAxes: [{
             id: 'left-y-axis',
@@ -163,7 +170,7 @@ function extract_datasets(response, average_num)
         }],
     };
 
-    var datasets_power = [
+    var datasets_power = add_shared_attrs([
         {
             label: data.titles[solar_power_all],
             borderColor: '#0000ff',
@@ -182,7 +189,7 @@ function extract_datasets(response, average_num)
             data: average(data[data.titles[bsp_tbat]].map(Number.parseFloat), average_num),
             yAxisID: 'right-y-axis',
         },
-    ];
+    ]);
     var scales_power = {
         yAxes: [{
             id: 'left-y-axis',
