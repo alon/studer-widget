@@ -1,3 +1,4 @@
+// vim: tabstop=4 expandtab shiftwidth=4
 'use strict';
 
 
@@ -48,10 +49,9 @@ function csv_date(timestr)
 }
 
 
-function merge_csv(csvs)
+function merge_csv(sorted)
 {
     // Note: ignores csv_version, extra_header, trailer
-    var sorted = csvs.map((c, i) => [csv_date(c.time[0]), i]).sort((a, b) => a[0].getTime() > b[0].getTime()).map(d => csvs[d[1]]);
     var ret = sorted[0];
     for (var i = 1 ; i < sorted.length ; ++i)
     {
@@ -148,11 +148,21 @@ DEV SYS MSG
 DEV SYS SCOM ERR
  */
 
-function extract_datasets(response, average_num)
+function first_prefix_match_offset(l, prefix) {
+    for (var i = 0 ; i < l.length ; ++i)
+    {
+        if (l[i].substr(0, prefix.length) == prefix) {
+            return i;
+        }
+    }
+    console.error('could not find ' + prefix + ' in titles: ' + l);
+    return 0;
+}
+
+
+function parse_time(time)
 {
-    var csvs = response.map(res => parse_csv(res.data));
-    var data = merge_csv(csvs);
-    var parts = data.time.map(x => x.split(' '));
+    var parts = time.map(x => x.split(' '));
     var date_start = parts[0][0];
     var date_end = parts[parts.length - 1][0];
     var time_full = parts.map(p => {
@@ -161,61 +171,95 @@ function extract_datasets(response, average_num)
         return new Date(day_month_year[2] + '-' + day_month_year[1] + '-' + day_month_year[0]
             + 'T' + hour_minute[0] + ':' + hour_minute[1] + ':00.000');
     });
-    var time = decimate_first_of(time_full, average_num);
-    var labels = time;
-    var titles = data.titles;
-    function indexof(s) {
-        for (var i = 0 ; i < titles.length ; ++i)
-        {
-            if (titles[i].substr(0, s.length) == s) { return i; }
-        }
-        console.error('could not find ' + s + ' in titles: ' + titles);
-        return 0;
+    return {time_full: time_full, date_start: date_start, date_end: date_end};
+}
+
+function csv_table_to_columns(data)
+{
+}
+
+function build_object(keys, key_to_value)
+{
+    let ret = {}
+    for (let i = 0 ; i < keys.length ; ++i) {
+        let k = keys[i];
+        ret[k] = key_to_value(k);
     }
-    var xt_ubat = indexof('XT-Ubat');
-    var xt_ibat = indexof('XT-Ibat');
-    var xt_pin = indexof('XT-Pin');
-    var xt_pout = indexof('XT-Pout');
-    var bsp_ubat = indexof('BSP-Ubat');
-    var bsp_ibat = indexof('BSP-Ibat');
-    var bsp_soc = indexof('BSP-SOC');
-    var bsp_tbat = indexof('BSP-Tbat');
-    var solar_power_all = indexof('Solar power (ALL)');
+    return ret;
+}
 
-    var tofloat_avg = title => average(data[title].map(Number.parseFloat), average_num);
 
-    var xt_ubat_arr = tofloat_avg(data.titles[xt_ubat]);
-    var xt_pin_title = data.titles[xt_pin];
-    var xt_pout_title = data.titles[xt_pout];
-    var xt_pin_arr = tofloat_avg(xt_pin_title);
-    var xt_pout_arr = tofloat_avg(xt_pout_title);
-    var bsp_battery_power_title = 'BSP Battery Power [kW]';
-    var bsp_battery_power = data.titles.length;
-    var bsp_ubat_arr = data[data.titles[bsp_ubat]].map(Number.parseFloat);
-    var bsp_ubat_min = Math.min.apply(Math, bsp_ubat_arr);
-    var bsp_ubat_max = Math.max.apply(Math, bsp_ubat_arr);
-    bsp_ubat_arr = average(bsp_ubat_arr, average_num);
-    data.titles.push(bsp_battery_power_title);
-    var bsp_ibat_arr = tofloat_avg(data.titles[bsp_ibat]);
-    var bsp_battery_power_arr = bsp_ubat_arr.map((v, i) => bsp_ibat_arr[i] * v / 1000.0); // [kW]
-    data[bsp_battery_power_title] = bsp_battery_power_arr;
-    // TODO: bsp_soc with right Y axis (percents)
-    var bsp_soc_arr = tofloat_avg(data.titles[bsp_soc]);
-    function add_shared_attrs(vd) {
-        return vd.map(d => Object.assign({
-                pointRadius: 0,
-                borderWidth: 1,
-                fill: false,
-        }, d));
+function parse_studer_csvs(csvs, average_num)
+{
+    let short_to_title_prefix = {
+        xt_ubat: 'XT-Ubat',
+        xt_ibat: 'XT-Ibat',
+        xt_pin: 'XT-Pin',
+        xt_pout: 'XT-Pout',
+        bsp_ubat: 'BSP-Ubat',
+        bsp_ibat: 'BSP-Ibat',
+        bsp_soc: 'BSP-SOC',
+        bsp_tbat: 'BSP-Tbat',
+        solar_power_all: 'Solar power (ALL)',
     };
-    let lines = csvs[0].trailer.filter(x => x.length >= 2 && x[0].substr !== undefined && x[0].substr(0, 1) == 'P')
+
+    var sorted = csvs.map((c, i) => [csv_date(c.time[0]), i]).sort((a, b) => a[0].getTime() > b[0].getTime()).map(d => csvs[d[1]]);
+    var recent_csv = merge_csv(sorted.slice(0, 3));
+    var d_short_to_title_num = build_object(Object.keys(short_to_title_prefix), k => first_prefix_match_offset(recent_csv.titles, short_to_title_prefix[k]));
+    var recent = build_object(Object.keys(d_short_to_title_num), k => recent_csv[recent_csv.titles[d_short_to_title_num[k]]].map(Number.parseFloat));
+    recent.bsp_battery_power = recent.bsp_ubat.map((v, i) => recent.bsp_ibat[i] * v / 1000.0); // [kW]
+    var all_csv = merge_csv(sorted);
+
+    var bsp_battery_power_title = 'BSP Battery Power [kW]';
+
+    let constants = csvs[0].trailer.filter(x => x.length >= 2 && x[0].substr !== undefined && x[0].substr(0, 1) == 'P')
         .reduce((acc, cur, i) => {
             acc[cur[0]] = cur[1];
             return acc;
         }, {});
 
-    let charts = [];
+    var time_data = parse_time(recent_csv.time);
+    var time_full = time_data.time_full;
+    var time = decimate_first_of(time_full, average_num);
 
+    var titles = short_to_title_prefix;
+    titles.bsp_battery_power = bsp_battery_power_title;
+
+    let averaged = build_object(Object.keys(recent), k => average(recent[k], average_num));
+
+    return {
+        full: {
+            data: all_csv,
+        },
+        recent: {
+            bsp_ubat_min: Math.min.apply(Math, recent.bsp_ubat),
+            bsp_ubat_max: Math.max.apply(Math, recent.bsp_ubat),
+            time: time,
+            cols: averaged,
+        },
+        titles: titles,
+        constants: constants,
+        date_start: time_data.date_start,
+        date_end: time_data.date_end,
+    };
+}
+
+
+function add_shared_attrs(vd) {
+    return vd.map(d => Object.assign({
+            pointRadius: 0,
+            borderWidth: 1,
+            fill: false,
+    }, d));
+};
+
+function make_recent_charts(d, labels)
+{
+    var recent = d.recent;
+    var constants = d.constants;
+    var cols = recent.cols;
+    var titles = d.titles;
+    var charts = [];
     // Graph 1:
     // (Y1) battery voltage from BSP
     //      U-Bat max from XT
@@ -223,9 +267,9 @@ function extract_datasets(response, average_num)
     // (Y2) BSP Bat SOC
     // (X) three days
     let line_datasets = ['P1108', 'P1140', 'P1156', 'P1164']
-        .filter(name => lines[name] !== undefined)
+        .filter(name => constants[name] !== undefined)
         .map((name, i) => {
-            let val = lines[name];
+            let val = constants[name];
             return {
                 label: name,
                 data: labels.map(unused => val),
@@ -236,21 +280,21 @@ function extract_datasets(response, average_num)
 
     var datasets_voltage = add_shared_attrs([
         {
-            label: data.titles[bsp_ubat],
+            label: titles.bsp_ubat,
             borderColor: '#ff0000',
-            data: bsp_ubat_arr,
+            data: cols.bsp_ubat,
             yAxisID: 'left-y-axis',
         },
         {
-            label: data.titles[xt_ubat],
+            label: titles.xt_ubat,
             borderColor: '#ff8000',
-            data: xt_ubat_arr,
+            data: cols.xt_ubat,
             yAxisID: 'left-y-axis',
         },
         {
-            label: data.titles[bsp_soc],
+            label: titles.bsp_soc,
             borderColor: '#00ff00',
-            data: bsp_soc_arr,
+            data: cols.bsp_soc,
             yAxisID: 'right-y-axis',
         },
     ].concat(line_datasets));
@@ -260,8 +304,8 @@ function extract_datasets(response, average_num)
             type: 'linear',
             position: 'left',
             ticks: {
-                min: bsp_ubat_min,
-                max: bsp_ubat_max,
+                min: recent.bsp_ubat_min,
+                max: recent.bsp_ubat_max,
             },
         }, {
             id: 'right-y-axis',
@@ -293,27 +337,27 @@ function extract_datasets(response, average_num)
     // Graph 2: (Y) P-ACin sum, P-ACout sum, P-Solar sum; (X) Three days
     var datasets_power = add_shared_attrs([
         {
-            label: xt_pin_title,
+            label: titles.xt_pin,
             borderColor: '#ff00ff',
-            data: xt_pin_arr,
+            data: cols.xt_pin,
             yAxisID: 'left-y-axis',
         },
         {
-            label: xt_pout_title,
+            label: titles.xt_pout,
             borderColor: '#ff00ff',
-            data: xt_pout_arr,
+            data: cols.xt_pout,
             yAxisID: 'left-y-axis',
         },
         {
-            label: bsp_battery_power_title,
+            label: titles.bsp_battery_power,
             borderColor: '#ff00ff',
-            data: bsp_battery_power_arr,
+            data: cols.bsp_battery_power,
             yAxisID: 'left-y-axis',
         },
         {
-            label: data.titles[solar_power_all],
+            label: titles.solar_power_all,
             borderColor: '#0000ff',
-            data: tofloat_avg(data.titles[solar_power_all]),
+            data: cols.solar_power_all,
             yAxisID: 'left-y-axis',
         },
     ]);
@@ -341,21 +385,18 @@ function extract_datasets(response, average_num)
         scales: scales_power,
     });
 
-    // Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
-    // TODO
-
     // Graph 4: (Y1) BSP I-Bat; (Y2) BSP Tbat; (X) Three days
     var datasets_i_tmp = add_shared_attrs([
         {
-            label: data.titles[bsp_ibat],
+            label: titles.bsp_ibat,
             borderColor: '#0000ff',
-            data: bsp_ibat_arr,
+            data: cols.bsp_ibat,
             yAxisID: 'left-y-axis',
         },
         {
-            label: data.titles[bsp_tbat].replace(/./g, x => replace_high(x, '')),
+            label: titles.bsp_tbat.replace(/./g, x => replace_high(x, '')),
             borderColor: '#00ffff',
-            data: tofloat_avg(data.titles[bsp_tbat]),
+            data: cols.bsp_tbat,
             yAxisID: 'right-y-axis',
         },
     ]);
@@ -382,13 +423,28 @@ function extract_datasets(response, average_num)
         scales: scales_i_tmp,
     });
 
+    return charts;
+}
+
+
+function extract_datasets(response, average_num)
+{
+    var csvs = response.map(res => parse_csv(res.data));
+    var d = parse_studer_csvs(csvs, average_num);
+    var time = d.recent.time;
+    var labels = time;
+    let charts = make_recent_charts(d, labels);
+
+    // Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
+    // TODO
+
     return {
         charts: charts,
         labels: labels,
         time: time,
-        date_start: date_start,
-        date_end: date_end,
-        csv_version: data.csv_version,
+        date_start: d.date_start,
+        date_end: d.date_end,
+        csv_version: d.full.data.csv_version,
     };
 }
 
