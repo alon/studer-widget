@@ -9,7 +9,6 @@ import extract_datasets from './process';
 function create_graph(response, average_num)
 {
     let d = extract_datasets(response, average_num);
-    let labels = d.labels;
     let csv_version = d.csv_version;
     let time = d.time;
     let date_start = d.date_start;
@@ -29,8 +28,9 @@ function create_graph(response, average_num)
                 charts: d.charts.map(function (datum) {
                     return {
                         key: datum.title,
+                        type: datum.type,
                         data: {
-                            labels: labels,
+                            labels: datum.labels,
                             datasets: datum.datasets,
                         },
                         options: Object.assign(datum.options || {}, {

@@ -2,15 +2,21 @@
 <template>
 <div>
   <p id="title">{{ chart_title }}</p>
-    <line-chart v-for="chart in charts"
+    <div v-for="chart in charts">
+    <bar-chart v-if="chart.type == 'bar'"
       :key="chart.key"
       :data="chart.data"
       :options="chart.options"/>
-    </line-chart>
+    <line-chart v-if="chart.type == 'line'"
+      :key="chart.key"
+      :data="chart.data"
+      :options="chart.options"/>
+    </div>
 </div>
 </template>
 <script>
 import line_chart from './line_chart'; // TODO is this required - the dependency is via the template, not script
+import bar_chart from './bar_chart'; // TODO is this required - the dependency is via the template, not script
 import { str__a_minus_b } from './util';
 
 export default {

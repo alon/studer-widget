@@ -208,7 +208,6 @@ function parse_studer_csvs(csvs, average_num)
     var d_short_to_title_num = build_object(Object.keys(short_to_title_prefix), k => first_prefix_match_offset(recent_csv.titles, short_to_title_prefix[k]));
     var recent = build_object(Object.keys(d_short_to_title_num), k => recent_csv[recent_csv.titles[d_short_to_title_num[k]]].map(Number.parseFloat));
     recent.bsp_battery_power = recent.bsp_ubat.map((v, i) => recent.bsp_ibat[i] * v / 1000.0); // [kW]
-    var all_csv = merge_csv(sorted);
 
     var bsp_battery_power_title = 'BSP Battery Power [kW]';
 
@@ -227,20 +226,31 @@ function parse_studer_csvs(csvs, average_num)
 
     let averaged = build_object(Object.keys(recent), k => average(recent[k], average_num));
 
+    let energy_time = sorted.map(x => {
+        let d = csv_date(x.time[0]);
+        return new Date(d.getUTCFullYear(), d.getMonth(), d.getDate(), 0, 0, 0)
+    });
+
+    let daily = build_object(['solar_power_all'], shrt => {
+        let title = recent_csv.titles[d_short_to_title_num[shrt]];
+        return sorted.map(csv => average(csv[title].map(Number.parseFloat), csv[title].length)[0]);
+    });
+
+    daily.time = energy_time;
+
     return {
-        full: {
-            data: all_csv,
-        },
         recent: {
             bsp_ubat_min: Math.min.apply(Math, recent.bsp_ubat),
             bsp_ubat_max: Math.max.apply(Math, recent.bsp_ubat),
             time: time,
             cols: averaged,
         },
+        daily: daily,
         titles: titles,
         constants: constants,
         date_start: time_data.date_start,
         date_end: time_data.date_end,
+        csvs: csvs,
     };
 }
 
@@ -323,6 +333,8 @@ function make_recent_charts(d, labels)
         title: "voltage",
         datasets: datasets_voltage,
         scales: scales_voltage,
+        labels: labels,
+        type: 'line',
         options: {
             legend: {
                 labels: {
@@ -338,7 +350,7 @@ function make_recent_charts(d, labels)
     var datasets_power = add_shared_attrs([
         {
             label: titles.xt_pin,
-            borderColor: '#ff00ff',
+            borderColor: '#ffff00',
             data: cols.xt_pin,
             yAxisID: 'left-y-axis',
         },
@@ -350,7 +362,7 @@ function make_recent_charts(d, labels)
         },
         {
             label: titles.bsp_battery_power,
-            borderColor: '#ff00ff',
+            borderColor: '#00ffff',
             data: cols.bsp_battery_power,
             yAxisID: 'left-y-axis',
         },
@@ -383,6 +395,8 @@ function make_recent_charts(d, labels)
         title: "power",
         datasets: datasets_power,
         scales: scales_power,
+        labels: labels,
+        type: 'line',
     });
 
     // Graph 4: (Y1) BSP I-Bat; (Y2) BSP Tbat; (X) Three days
@@ -421,6 +435,8 @@ function make_recent_charts(d, labels)
         title: "bat-I-temp",
         datasets: datasets_i_tmp,
         scales: scales_i_tmp,
+        labels: labels,
+        type: 'line',
     });
 
     return charts;
@@ -436,15 +452,41 @@ function extract_datasets(response, average_num)
     let charts = make_recent_charts(d, labels);
 
     // Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
-    // TODO
+    var datasets_avg = add_shared_attrs([
+        {
+            label: 'Solar',
+            borderColor: '#0000ff',
+            data: d.daily.solar_power_all,
+            yAxisID: 'left-y-axis',
+        },
+    ]);
+    var scales_avg = {
+        yAxes: [{
+            id: 'left-y-axis',
+            type: 'linear',
+            position: 'left',
+        }],
+        xAxes: [{
+            type: 'time',
+            time: {
+                unit: 'day',
+            }
+        }],
+    };
+    charts.push({
+        title: "daily averages",
+        datasets: datasets_avg,
+        scales: scales_avg,
+        labels: d.daily.time,
+        type: 'bar',
+    });
 
     return {
         charts: charts,
-        labels: labels,
         time: time,
         date_start: d.date_start,
         date_end: d.date_end,
-        csv_version: d.full.data.csv_version,
+        csv_version: d.csvs[0].csv_version,
     };
 }
 
