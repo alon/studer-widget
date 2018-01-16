@@ -321,10 +321,18 @@ function make_recent_charts(d, labels)
                 min: Math.min(recent.bsp_ubat_min, Math.min.apply(Math, voltage_constants_values)) - 0.1,
                 max: Math.max(recent.bsp_ubat_max, Math.max.apply(Math, voltage_constants_values)) + 0.1,
             },
+            scaleLabel: {
+                display: true,
+                labelString: 'Voltage [V]',
+            },
         }, {
             id: 'right-y-axis',
             type: 'linear',
             position: 'right',
+            scaleLabel: {
+                display: true,
+                labelString: 'State of charge [%]',
+            },
         }],
         xAxes: timeXAxes,
     };
@@ -351,36 +359,36 @@ function make_recent_charts(d, labels)
             label: titles.xt_pin,
             borderColor: '#ffff00',
             data: cols.xt_pin,
-            yAxisID: 'left-y-axis',
+            yAxisID: 'y-axis',
         },
         {
             label: titles.xt_pout,
             borderColor: '#ff00ff',
             data: cols.xt_pout,
-            yAxisID: 'left-y-axis',
+            yAxisID: 'y-axis',
         },
         {
             label: titles.bsp_battery_power,
             borderColor: '#00ffff',
             data: cols.bsp_battery_power,
-            yAxisID: 'left-y-axis',
+            yAxisID: 'y-axis',
         },
         {
             label: titles.solar_power_all,
             borderColor: '#0000ff',
             data: cols.solar_power_all,
-            yAxisID: 'left-y-axis',
+            yAxisID: 'y-axis',
         },
     ]);
     var scales_power = {
         yAxes: [{
-            id: 'left-y-axis',
+            id: 'y-axis',
             type: 'linear',
             position: 'left',
-        }, {
-            id: 'right-y-axis',
-            type: 'linear',
-            position: 'right',
+            scaleLabel: {
+                display: true,
+                labelString: 'Power [kW]',
+            },
         }],
         xAxes: timeXAxes,
     };
@@ -413,10 +421,18 @@ function make_recent_charts(d, labels)
             id: 'left-y-axis',
             type: 'linear',
             position: 'left',
+            scaleLabel: {
+                display: true,
+                labelString: 'Current [A]',
+            },
         }, {
             id: 'right-y-axis',
             type: 'linear',
             position: 'right',
+            scaleLabel: {
+                display: true,
+                labelString: 'Temperature [C]',
+            },
         }],
         xAxes: timeXAxes,
     };
