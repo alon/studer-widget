@@ -14,6 +14,7 @@ function create_graph(filenames, response, average_num)
     let time = d.time;
     let date_start = d.date_start;
     let date_end = d.date_end;
+    filenames.sort();
 
     window.App = new Vue({
       el: '#app',
