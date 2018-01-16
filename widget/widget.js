@@ -87,7 +87,9 @@ function get_all_csv_files(response)
     var lines = data.split('\n');
     for (var i = 0 ; i < lines.length ; ++i)
     {
-        promises.push(axios.get(lines[i]));
+        if (/\.CSV$/.test(lines[i])) {
+            promises.push(axios.get(lines[i]));
+        }
     }
     return Promise.all(promises); // TODO: what are the requirements? should I have alternative implementations?
 }
