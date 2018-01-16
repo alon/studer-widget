@@ -219,9 +219,12 @@ function parse_studer_csvs(csvs, average_num)
         return new Date(d.getUTCFullYear(), d.getMonth(), d.getDate(), 0, 0, 0)
     });
 
-    let daily = build_object(['solar_power_all'], shrt => {
+    let daily = build_object(['solar_power_all', 'xt_pin', 'xt_pout'], shrt => {
         let title = recent_csv.titles[d_short_to_title_num[shrt]];
-        return sorted.map(csv => average(csv[title].map(Number.parseFloat), csv[title].length)[0]);
+        return sorted.map(csv =>
+            csv[title]
+            .map(Number.parseFloat)
+            .reduce((acc, cur, i) => acc + cur, 0));
     });
 
     daily.time = energy_time;
@@ -459,8 +462,20 @@ function extract_datasets(response, average_num)
     // Graph 3: (Y) E-ACin sum, E-ACout sum, E-Solar sum; (X) Thirty days
     var datasets_avg = add_shared_attrs([
         {
-            label: 'Solar',
+            label: 'E-in',
+            borderColor: '#ff0000',
+            data: d.daily.xt_pin,
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: 'E-out',
             borderColor: '#0000ff',
+            data: d.daily.xt_pout,
+            yAxisID: 'left-y-axis',
+        },
+        {
+            label: 'Solar',
+            borderColor: '#00ff00',
             data: d.daily.solar_power_all,
             yAxisID: 'left-y-axis',
         },
@@ -470,6 +485,10 @@ function extract_datasets(response, average_num)
             id: 'left-y-axis',
             type: 'linear',
             position: 'left',
+            scaleLabel: {
+                display: true,
+                labelString: 'Energy [J]',
+            },
         }],
         xAxes: [{
             type: 'time',
