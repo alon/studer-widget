@@ -165,7 +165,7 @@ function parse_time(time)
     var parts = time.map(x => x.split(' '));
     var date_start = parts[0][0];
     var date_end = parts[parts.length - 1][0];
-    var time_full = parts.map(p => {
+    var time_full = parts.map((p, i) => {
         var day_month_year = p[0].split('.');
         var hour_minute = p[1].split(':');
         return new Date(day_month_year[2] + '-' + day_month_year[1] + '-' + day_month_year[0]
@@ -203,7 +203,7 @@ function parse_studer_csvs(csvs, average_num)
         solar_power_all: 'Solar power (ALL)',
     };
 
-    var sorted = csvs.map((c, i) => [csv_date(c.time[0]), i]).sort((a, b) => a[0].getTime() > b[0].getTime()).map(d => csvs[d[1]]);
+    var sorted = csvs.map((c, i) => [csv_date(c.time[0]), i]).sort((a, b) => a[0] < b[0] ? -1 : (a[0] == b[0] ? 0 : 1)).map(x => csvs[x[1]]);
     var recent_csv = merge_csv(sorted.slice(0, 3));
     var d_short_to_title_num = build_object(Object.keys(short_to_title_prefix), k => first_prefix_match_offset(recent_csv.titles, short_to_title_prefix[k]));
     var recent = build_object(Object.keys(d_short_to_title_num), k => recent_csv[recent_csv.titles[d_short_to_title_num[k]]].map(Number.parseFloat));
