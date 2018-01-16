@@ -2,11 +2,6 @@
 <template>
 <div>
   <p id="title">{{ chart_title }}</p>
-    <div>
-      <li v-for="constant in Object.keys(constants)">
-      {{ constant }}: {{ constants[constant] }}
-      </li>
-    </div>
     <div v-for="chart in charts">
     <bar-chart v-if="chart.type == 'bar'"
       :key="chart.key"
@@ -16,6 +11,23 @@
       :key="chart.key"
       :data="chart.data"
       :options="chart.options"/>
+    </div>
+    <select v-model="extra">
+		<option disabled value="">Extra</option>
+		<option value="constants">constants</option>
+		<option value="download">download</option>
+	</select>
+    <div v-show="extra == 'constants'">
+      <table>
+      <tr v-for="constant in Object.keys(constants)">
+          <td>{{ constant }}</td><td>{{ constants[constant] }}</td>
+      </tr>
+      </table>
+    </div>
+    <div v-show="extra == 'download'">
+      <div v-for="filename in filenames">
+        <a :href="filename">{{filename}}</a>
+      </div>
     </div>
 </div>
 </template>
@@ -33,7 +45,11 @@ export default {
     'date_end',
     'charts',
     'constants',
+    'filenames',
   ],
+  data: () => {
+    return { extra: '' };
+  },
   computed: {
     chart_title: function() {
         var last = this.time[this.time.length - 1];

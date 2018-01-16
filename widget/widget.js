@@ -7,7 +7,7 @@ import build_object from './util';
 
 "use strict";
 
-function create_graph(response, average_num)
+function create_graph(filenames, response, average_num)
 {
     let d = extract_datasets(response, average_num);
     let csv_version = d.csv_version;
@@ -27,6 +27,7 @@ function create_graph(response, average_num)
                 time: time,
                 csv_version: csv_version,
                 constants: d.constants,
+                filenames: filenames,
                 charts: d.charts.map(function (datum) {
                     return {
                         key: datum.title,
@@ -90,6 +91,7 @@ function get_all_csv_files(response)
     for (var i = 0 ; i < lines.length ; ++i)
     {
         if (/\.CSV$/.test(lines[i])) {
+            filenames.push(lines[i]);
             promises.push(axios.get(lines[i]));
         }
     }
@@ -98,6 +100,7 @@ function get_all_csv_files(response)
 
 
 let csv_url = getParamValue("csv");
+let filenames = [];
 let average_num = Number.parseFloat(getParamValue("average")) || 10;
 
 // Not sure: show a "waiting" thing first?
@@ -115,10 +118,10 @@ function extension(name)
 
 if (extension(csv_url).toLocaleLowerCase() == "csv") {
     axios.get(csv_url)
-        .then(data => create_graph(data, average_num));
+        .then(data => create_graph([csv_url], data, average_num));
 } else {
     axios.get(csv_url)
         .then(get_all_csv_files)
-        .then(data => create_graph(data, average_num));
+        .then(data => create_graph(filenames, data, average_num));
 }
 
