@@ -258,6 +258,19 @@ function make_recent_charts(d, labels)
     var cols = recent.cols;
     var titles = d.titles;
     var charts = [];
+
+    let timeXAxes = [{
+        type: 'time',
+        // TODO: show Day Hour Hour Hour Day .. ; currently just Hour Hour Hour
+        time: {
+            unit: 'hour',
+            stepSize: 2,
+        },
+        gridLines: {
+            display: true,
+        }
+    }];
+
     // Graph 1:
     // (Y1) battery voltage from BSP
     //      U-Bat max from XT
@@ -313,12 +326,7 @@ function make_recent_charts(d, labels)
             type: 'linear',
             position: 'right',
         }],
-        xAxes: [{
-            type: 'time',
-            time: {
-                unit: 'day',
-            }
-        }],
+        xAxes: timeXAxes,
     };
     charts.push({
         title: "voltage",
@@ -374,12 +382,7 @@ function make_recent_charts(d, labels)
             type: 'linear',
             position: 'right',
         }],
-        xAxes: [{
-            type: 'time',
-            time: {
-                unit: 'day',
-            }
-        }],
+        xAxes: timeXAxes,
     };
 
     charts.push({
@@ -415,12 +418,7 @@ function make_recent_charts(d, labels)
             type: 'linear',
             position: 'right',
         }],
-        xAxes: [{
-            type: 'time',
-            time: {
-                unit: 'day',
-            }
-        }],
+        xAxes: timeXAxes,
     };
     charts.push({
         title: "bat-I-temp",
@@ -461,6 +459,9 @@ function extract_datasets(response, average_num)
             type: 'time',
             time: {
                 unit: 'day',
+            },
+            gridLines: {
+                display: true,
             }
         }],
     };
