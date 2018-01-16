@@ -1,6 +1,8 @@
 // vim: tabstop=4 expandtab shiftwidth=4
 'use strict';
 
+import { build_object } from './util';
+
 
 function parse_csv(data)
 {
@@ -172,20 +174,6 @@ function parse_time(time)
             + 'T' + hour_minute[0] + ':' + hour_minute[1] + ':00.000');
     });
     return {time_full: time_full, date_start: date_start, date_end: date_end};
-}
-
-function csv_table_to_columns(data)
-{
-}
-
-function build_object(keys, key_to_value)
-{
-    let ret = {}
-    for (let i = 0 ; i < keys.length ; ++i) {
-        let k = keys[i];
-        ret[k] = key_to_value(k);
-    }
-    return ret;
 }
 
 
@@ -487,6 +475,7 @@ function extract_datasets(response, average_num)
         date_start: d.date_start,
         date_end: d.date_end,
         csv_version: d.csvs[0].csv_version,
+        constants: d.constants,
     };
 }
 

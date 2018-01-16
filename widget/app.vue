@@ -2,6 +2,11 @@
 <template>
 <div>
   <p id="title">{{ chart_title }}</p>
+    <div>
+      <li v-for="constant in Object.keys(constants)">
+      {{ constant }}: {{ constants[constant] }}
+      </li>
+    </div>
     <div v-for="chart in charts">
     <bar-chart v-if="chart.type == 'bar'"
       :key="chart.key"
@@ -27,6 +32,7 @@ export default {
     'date_start',
     'date_end',
     'charts',
+    'constants',
   ],
   computed: {
     chart_title: function() {

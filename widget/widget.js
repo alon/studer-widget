@@ -3,6 +3,7 @@ import Vue from 'vue';
 import moment from 'moment'; // required by vue - needs to be loaded before use, used dynamically
 import App from './app';
 import extract_datasets from './process';
+import build_object from './util';
 
 "use strict";
 
@@ -25,6 +26,7 @@ function create_graph(response, average_num)
                 date_end: date_end,
                 time: time,
                 csv_version: csv_version,
+                constants: d.constants,
                 charts: d.charts.map(function (datum) {
                     return {
                         key: datum.title,
