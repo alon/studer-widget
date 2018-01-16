@@ -264,7 +264,10 @@ function make_recent_charts(d, labels)
     // constant line from parameters P1108, P1140, P1156, P1164
     // (Y2) BSP Bat SOC
     // (X) three days
-    let line_datasets = ['P1108', 'P1140', 'P1156', 'P1164']
+    let voltage_constants = build_object(['P1108', 'P1140', 'P1156', 'P1164'], c => Number.parseFloat(constants[c]));
+    let voltage_constants_values = Object.values(voltage_constants);
+    let line_datasets =
+        Object.keys(voltage_constants)
         .filter(name => constants[name] !== undefined)
         .map((name, i) => {
             let val = constants[name];
@@ -302,8 +305,8 @@ function make_recent_charts(d, labels)
             type: 'linear',
             position: 'left',
             ticks: {
-                min: recent.bsp_ubat_min,
-                max: recent.bsp_ubat_max,
+                min: Math.min(recent.bsp_ubat_min, Math.min.apply(Math, voltage_constants_values)) - 0.1,
+                max: Math.max(recent.bsp_ubat_max, Math.max.apply(Math, voltage_constants_values)) + 0.1,
             },
         }, {
             id: 'right-y-axis',
