@@ -204,7 +204,7 @@ function parse_studer_csvs(csvs, average_num)
     };
 
     var sorted = csvs.map((c, i) => [csv_date(c.time[0]), i]).sort((a, b) => a[0] < b[0] ? -1 : (a[0] == b[0] ? 0 : 1)).map(x => csvs[x[1]]);
-    var recent_csv = merge_csv(sorted.slice(0, 3));
+    var recent_csv = merge_csv(sorted.slice(sorted.length - 3, sorted.length));
     var d_short_to_title_num = build_object(Object.keys(short_to_title_prefix), k => first_prefix_match_offset(recent_csv.titles, short_to_title_prefix[k]));
     var recent = build_object(Object.keys(d_short_to_title_num), k => recent_csv[recent_csv.titles[d_short_to_title_num[k]]].map(Number.parseFloat));
     recent.bsp_battery_power = recent.bsp_ubat.map((v, i) => recent.bsp_ibat[i] * v / 1000.0); // [kW]
