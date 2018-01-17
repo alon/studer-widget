@@ -254,6 +254,12 @@ function add_shared_attrs(vd) {
     }, d));
 };
 
+
+let gridLines05 = {
+    display: true,
+    color: 'rgba(0, 0, 0, 0.5)',
+};
+
 function make_recent_charts(d, labels)
 {
     var recent = d.recent;
@@ -269,9 +275,7 @@ function make_recent_charts(d, labels)
             unit: 'hour',
             stepSize: 2,
         },
-        gridLines: {
-            display: true,
-        }
+        gridLines: gridLines05,
     }];
 
     // Graph 1:
@@ -392,6 +396,7 @@ function make_recent_charts(d, labels)
                 display: true,
                 labelString: 'Power [kW]',
             },
+            gridLines: gridLines05,
         }],
         xAxes: timeXAxes,
     };
@@ -428,6 +433,7 @@ function make_recent_charts(d, labels)
                 display: true,
                 labelString: 'Current [A]',
             },
+            gridLines: gridLines05,
         }, {
             id: 'right-y-axis',
             type: 'linear',
@@ -487,17 +493,16 @@ function extract_datasets(response, average_num)
             position: 'left',
             scaleLabel: {
                 display: true,
-                labelString: 'Energy [J]',
+                labelString: 'Energy [kWh]',
             },
+            gridLines: gridLines05,
         }],
         xAxes: [{
             type: 'time',
             time: {
                 unit: 'day',
             },
-            gridLines: {
-                display: true,
-            }
+            gridLines: gridLines05,
         }],
     };
     charts.push({
