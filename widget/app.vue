@@ -71,4 +71,7 @@ export default {
 };
 </script>
 <style>
+#title {
+    text-align: center;
+}
 </style>
