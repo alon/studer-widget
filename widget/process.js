@@ -493,7 +493,7 @@ function extract_datasets(response, average_num)
             position: 'left',
             scaleLabel: {
                 display: true,
-                labelString: 'Energy [kWh]',
+                labelString: 'Energy [Whr]',
             },
             gridLines: gridLines05,
         }],
