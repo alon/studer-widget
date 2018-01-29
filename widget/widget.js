@@ -83,17 +83,17 @@ function getParamValue(paramName)
     }
 }
 
-function get_all_csv_files(response)
+function get_all_csv_files(root, response)
 {
     var data = (response.data);
-    // TODO: return all. sstart with one
     var promises = [];
     var lines = data.split('\n');
     for (var i = 0 ; i < lines.length ; ++i)
     {
         if (/\.CSV$/.test(lines[i])) {
+            let fullname = root === null || root.length === undefined || root.length === 0 ? lines[i] : root + '/' + lines[i];
             filenames.push(lines[i]);
-            promises.push(axios.get(lines[i]));
+            promises.push(axios.get(fullname));
         }
     }
     return Promise.all(promises); // TODO: what are the requirements? should I have alternative implementations?
@@ -117,12 +117,28 @@ function extension(name)
     return name.substring(dot + 1);
 }
 
+function get_root_path(url)
+{
+    let scheme_index = url.indexOf('://');
+    let path;
+    if (scheme_index == -1) {
+        path = url;
+    } else {
+        let after_scheme = url.split('://')[1];
+        path = after_scheme.substr(after_scheme.indexOf('/') + 1, after_scheme.length);
+    }
+    let ind = path.lastIndexOf('/');
+    return path.substring(0, ind);
+}
+
+let root = get_root_path(csv_url);
+
 if (extension(csv_url).toLocaleLowerCase() == "csv") {
     axios.get(csv_url)
         .then(data => create_graph([csv_url], data, average_num));
 } else {
     axios.get(csv_url)
-        .then(get_all_csv_files)
+        .then(response => get_all_csv_files(root, response))
         .then(data => create_graph(filenames, data, average_num));
 }
 
