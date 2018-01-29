@@ -228,11 +228,12 @@ function parse_studer_csvs(csvs, average_num)
     });
 
     daily.time = energy_time;
+    let bsp_ubat_vals = recent.bsp_ubat.filter(x => !isNaN(x));
 
     return {
         recent: {
-            bsp_ubat_min: Math.min.apply(Math, recent.bsp_ubat),
-            bsp_ubat_max: Math.max.apply(Math, recent.bsp_ubat),
+            bsp_ubat_min: Math.min.apply(Math, bsp_ubat_vals),
+            bsp_ubat_max: Math.max.apply(Math, bsp_ubat_vals),
             time: time,
             cols: averaged,
         },
