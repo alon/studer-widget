@@ -4,6 +4,7 @@ import moment from 'moment'; // required by vue - needs to be loaded before use,
 import App from './app';
 import extract_datasets from './process';
 import build_object from './util';
+import { } from 'iframe-resizer';
 
 "use strict";
 
