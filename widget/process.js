@@ -182,8 +182,8 @@ function parse_studer_csvs(csvs, average_num)
     let short_to_title_prefix = {
         xt_ubat: 'XT-Ubat',
         xt_ibat: 'XT-Ibat',
-        xt_pin: 'XT-Pin',
-        xt_pout: 'XT-Pout',
+        xt_pin: 'XT-Pin a',
+        xt_pout: 'XT-Pout a',
         bsp_ubat: 'BSP-Ubat',
         bsp_ibat: 'BSP-Ibat',
         bsp_soc: 'BSP-SOC',
@@ -219,12 +219,17 @@ function parse_studer_csvs(csvs, average_num)
         return new Date(d.getUTCFullYear(), d.getMonth(), d.getDate(), 0, 0, 0)
     });
 
+    function average_valid_lines(arr) {
+        let floats = arr.map(Number.parseFloat);
+        let invalid = floats.filter(isNaN).length;
+        let N = floats.length - invalid;
+        let sum = floats.filter(x => !isNaN(x)).reduce((acc, cur, i) => acc + cur, 0);
+        return sum / N;
+    }
+
     let daily = build_object(['solar_power_all', 'xt_pin', 'xt_pout'], shrt => {
         let title = recent_csv.titles[d_short_to_title_num[shrt]];
-        return sorted.map(csv =>
-            csv[title]
-            .map(Number.parseFloat)
-            .reduce((acc, cur, i) => acc + cur, 0));
+        return sorted.map(csv => average_valid_lines(csv[title]) * 1440 / 60.0);  // convert to kWhr from kWminute
     });
 
     daily.time = energy_time;
@@ -494,7 +499,7 @@ function extract_datasets(response, average_num)
             position: 'left',
             scaleLabel: {
                 display: true,
-                labelString: 'Energy [Whr]',
+                labelString: 'Energy [kWhr]',
             },
             gridLines: gridLines05,
         }],
