@@ -4,7 +4,7 @@
 import { build_object } from './util';
 
 
-function parse_csv(data)
+function parse_studer_csv(data)
 {
     var lines = data.split('\n');
     var header = lines[0].split(',');
@@ -460,7 +460,7 @@ function make_recent_charts(d, labels)
 
 function extract_datasets(response, average_num)
 {
-    var csvs = response.map(res => parse_csv(res.data));
+    var csvs = response.map(res => parse_studer_csv(res.data));
     var d = parse_studer_csvs(csvs, average_num);
     var time = d.recent.time;
     var labels = time;
