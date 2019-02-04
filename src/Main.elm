@@ -10,7 +10,7 @@ type alias Model = String
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  ("hello", Cmd.none)
+  ("hello5", Http.get { url = "/", expect = Http.expectString GotText })
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -20,6 +20,7 @@ update msg model =
 
 type Msg =
   Nothing
+  | GotText (Result Http.Error String)
 
 
 view : Model -> Html Msg
