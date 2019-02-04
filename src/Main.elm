@@ -15,7 +15,12 @@ init _ =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  (model, Cmd.none)
+  case msg of
+    Nothing -> (model, Cmd.none)
+    GotText result ->
+      case result of
+        Ok something -> (something, Cmd.none)
+        Err _ -> ("Get error", Cmd.none)
 
 
 type Msg =
