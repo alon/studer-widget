@@ -6,12 +6,16 @@ import Regex exposing (..)
 
 -- My Main
 
-type alias Model = List String
+
+type Model =
+  Init
+  | Downloading (List String) (List String)
+  | Error String
 
 
 init : () -> (Model, Cmd Msg)
 init _ =
-  (["hello6"], Http.get { url = "/", expect = Http.expectString GotText })
+  (Init, Http.get { url = "/", expect = Http.expectString GotText })
 
 
 parse_hrefs : String -> List String
@@ -41,9 +45,9 @@ update msg model =
     GotText result ->
       case result of
         Ok something ->
-          (parse_hrefs something, Cmd.none)
+          (Downloading (parse_hrefs something) [], Cmd.none)
         Err _ ->
-          (["Get error"], Cmd.none)
+          (Error "Get error", Cmd.none)
 
 
 type Msg =
@@ -53,7 +57,16 @@ type Msg =
 
 view : Model -> Html Msg
 view model =
-  div [] (List.map text model)
+  case model of
+    Init -> div [] [text "init"]
+    Error s -> div [] [text s]
+    Downloading missing downloaded ->
+      div []
+        ([div [] [text "missing"]] ++
+        List.map (\x -> div [] [text x]) missing ++
+        [div [] [text "downloaded"]] ++
+        List.map (\x -> div [] [text x]) downloaded
+        )
 
 
 subscriptions : Model -> Sub Msg
