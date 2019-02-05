@@ -16,16 +16,19 @@ init _ =
 
 parse_hrefs : String -> List String
 parse_hrefs s =
-  List.map (Maybe.withDefault "") (flattenList (List.map .submatches (find hrefs_regex s)))
+  List.map
+    (Maybe.withDefault "")
+    (flattenList
+      (Debug.log s (List.map .submatches (find hrefs_regex s))))
 
 
 hrefs_regex =
-  Maybe.withDefault Regex.never (Regex.fromString "href=\"([^\"])\"")
+  Maybe.withDefault Regex.never (Regex.fromString "href=\"([^\"]*)\"")
 
 
 flattenList : List (List a) -> List a
 flattenList l =
-  case l of
+  case  l of
     [] -> []
     ((x :: z) :: y) -> x :: (flattenList (z :: y))
     [] :: y -> flattenList y
