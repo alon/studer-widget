@@ -5,6 +5,8 @@ import Html.Events exposing (onClick)
 import Http
 import Regex exposing (..)
 import File.Download as Download
+import Tar exposing (..)
+import Bytes exposing (Bytes)
 
 -- My Main
 
@@ -63,6 +65,15 @@ download model =
     _ -> (model, Cmd.none)
 
 
+tar : List AFile -> Bytes
+tar files =
+  let
+      transform = \f -> ({ defaultFileRecord | filename = f.filename }, StringData f.content)
+      data = List.map transform files
+  in
+    createArchive data
+
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
@@ -70,7 +81,7 @@ update msg model =
     DownloadToUser ->
       case model of
         GettingServerFile data ->
-          (model, (Download.string "test" "text/markdown" "test content"))
+          (model, (Download.bytes "test.tar" "binary/tar" (tar data.done)))
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
