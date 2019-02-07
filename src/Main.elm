@@ -36,7 +36,7 @@ parse_hrefs s =
   List.map
     (Maybe.withDefault "")
     (flattenList
-      (Debug.log s (List.map .submatches (find hrefs_regex s))))
+      (List.map .submatches (find hrefs_regex s)))
 
 
 hrefs_regex =
@@ -58,7 +58,10 @@ download model =
       case data.next of
         first :: rest ->
           (GettingServerFile { next = rest, current = Just first, done = data.done },
-           Http.get { url = first, expect = Http.expectString GotFile }
+           Http.get {
+               url = (Debug.log "get url" (first ++ "#bla")),
+               expect = Http.expectString GotFile
+             }
           )
         [] ->
           (model, Cmd.none)
@@ -81,7 +84,7 @@ update msg model =
     DownloadToUser ->
       case model of
         GettingServerFile data ->
-          (model, (Download.bytes "test.tar" "binary/tar" (tar data.done)))
+          (model, (Download.bytes "test.tar" "application/x-tar" (tar (Debug.log "data.done" data.done))))
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
@@ -108,8 +111,9 @@ update msg model =
         Ok something ->
           let
               parsed = parse_hrefs something
+              csvs = List.filter (\s -> String.endsWith ".csv" (String.toLower s)) parsed
           in
-              download (GettingServerFile { done = [], next = parsed, current = Nothing })
+              download (GettingServerFile { done = [], next = csvs, current = Nothing })
         Err _ ->
           (Error "Get error", Cmd.none)
 
@@ -135,7 +139,7 @@ view model =
         [div [] [text (Debug.toString data.current)]] ++
         case List.length data.done of
           0 -> []
-          _ -> [button [onClick DownloadToUser] [text "download"]]
+          _ -> [button [onClick DownloadToUser] [(text "download"), (text (Debug.toString data.done))]]
         )
 
 
