@@ -84,7 +84,7 @@ update msg model =
     DownloadToUser ->
       case model of
         GettingServerFile data ->
-          (model, (Download.bytes "test.tar" "application/x-tar" (tar (Debug.log "data.done" data.done))))
+          (model, (Download.bytes "test.tar" "application/x-tar" (tar data.done)))
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
@@ -139,7 +139,7 @@ view model =
         [div [] [text (Debug.toString data.current)]] ++
         case List.length data.done of
           0 -> []
-          _ -> [button [onClick DownloadToUser] [(text "download"), (text (Debug.toString data.done))]]
+          _ -> [button [onClick DownloadToUser] [(text "download")]]
         )
 
 
