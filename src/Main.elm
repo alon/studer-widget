@@ -1,8 +1,10 @@
 module Main exposing (main)
 import Browser
 import Html exposing (..)
+import Html.Events exposing (onClick)
 import Http
 import Regex exposing (..)
+import File.Download as Download
 
 -- My Main
 
@@ -12,11 +14,12 @@ type alias AFile = { filename : String, content : String }
 
 type Model =
   Init
-  | Downloading {
+  | GettingServerFile {
       next : (List String),
       current : Maybe String,
       done : (List AFile)
     }
+  -- TODO: have a state for DoneDownloading, which enables the download button
   | Error String
 
 
@@ -49,10 +52,10 @@ flattenList l =
 download : Model -> (Model, Cmd Msg)
 download model =
   case model of
-    Downloading data ->
+    GettingServerFile data ->
       case data.next of
         first :: rest ->
-          (Downloading { next = rest, current = Just first, done = data.done },
+          (GettingServerFile { next = rest, current = Just first, done = data.done },
            Http.get { url = first, expect = Http.expectString GotFile }
           )
         [] ->
@@ -64,32 +67,38 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     DoNothing -> (model, Cmd.none)
+    DownloadToUser ->
+      case model of
+        GettingServerFile data ->
+          (model, (Download.string "test" "text/markdown" "test content"))
+        _ ->
+          (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
       case result of
         Ok content ->
           case model of
-            Downloading data ->
+            GettingServerFile data ->
               case data.current of
                 Just current ->
                   let
-                    newmodel = Downloading { data | done = ({ filename = current, content = content } :: data.done), current = Nothing }
+                    newmodel = GettingServerFile { data | done = ({ filename = current, content = content } :: data.done), current = Nothing }
                   in
                     download newmodel
                 _ -> (Error "another unexpected case", Cmd.none)
             _ -> (Error "unexpected endcase, how do I prevent this at compile time?", Cmd.none)
         Err _ ->
           case model of
-            Downloading data ->
+            GettingServerFile data ->
               (Error ("error downloading " ++ (Debug.toString data.current)), Cmd.none)
             _ ->
-              (Error "error downloading and not in Downloading, elm-help!", Cmd.none)
+              (Error "error downloading and not in GettingServerFile, elm-help!", Cmd.none)
     GotRoot result ->
       case result of
         Ok something ->
           let
               parsed = parse_hrefs something
           in
-              download (Downloading { done = [], next = parsed, current = Nothing })
+              download (GettingServerFile { done = [], next = parsed, current = Nothing })
         Err _ ->
           (Error "Get error", Cmd.none)
 
@@ -98,6 +107,7 @@ type Msg =
   DoNothing
   | GotRoot (Result Http.Error String)
   | GotFile (Result Http.Error String)
+  | DownloadToUser
 
 
 view : Model -> Html Msg
@@ -105,13 +115,16 @@ view model =
   case model of
     Init -> div [] [text "init"]
     Error s -> div [] [text s]
-    Downloading data ->
+    GettingServerFile data ->
       div []
         ([div [] [text "missing"]] ++
         List.map (\x -> div [] [text x]) data.next ++
         [div [] [text "downloaded"]] ++
         List.map (\x -> div [] [text ("downloaded " ++ (x.filename))]) data.done ++
-        [div [] [text (Debug.toString data.current)]]
+        [div [] [text (Debug.toString data.current)]] ++
+        case List.length data.done of
+          0 -> []
+          _ -> [button [onClick DownloadToUser] [text "download"]]
         )
 
 
