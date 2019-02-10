@@ -1,4 +1,5 @@
 module Main exposing (main)
+import Array exposing (..)
 import Browser
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
@@ -18,10 +19,6 @@ type alias AFile = { filename : String, content : String }
 type alias DateControlModel =
   -- todo: Maybe'fy
   { date: String }
-
-
-defaultDateControlModel =
-  { date = "2019-01-01" }
 
 
 type Model =
@@ -69,7 +66,7 @@ download model =
         first :: rest ->
           (GettingServerFile { data | next = rest, current = Just first, done = data.done },
            Http.get {
-               url = (Debug.log "get url" (first ++ "#bla")),
+               url = first ++ "#bla",
                expect = Http.expectString GotFile
              }
           )
@@ -91,6 +88,10 @@ updateDateControl : DateControlMsg -> DateControlModel -> DateControlModel
 updateDateControl msg model =
   case msg of
     UpdateDate date -> { model | date = (Debug.log "new date" date) }
+
+
+defaultDateControlModel =
+  { date = "2019-01-01" }
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -139,9 +140,24 @@ update msg model =
         Ok something ->
           let
               parsed = parse_hrefs something
-              csvs = List.filter (\s -> String.endsWith ".csv" (String.toLower s)) parsed
+              csvs = List.sort <| List.filter (\s -> String.endsWith ".csv" (String.toLower s)) parsed
+              parsedArray = Array.fromList csvs
+              n = Array.length parsedArray
+              lastIdx = n - 1
+              firstItem = Array.get 0 parsedArray
+              lastItem = Array.get lastIdx parsedArray
+              firstDate = Maybe.map filenameToDate firstItem
+              lastDate = Maybe.map filenameToDate lastItem
+              first = Maybe.withDefault defaultDateControlModel lastDate
+              last = Maybe.withDefault defaultDateControlModel lastDate
           in
-              download (GettingServerFile { done = [], next = csvs, current = Nothing, first = defaultDateControlModel, last = defaultDateControlModel })
+              download (GettingServerFile {
+                done = [],
+                next = csvs,
+                current = Nothing,
+                first = first,
+                last = last
+              })
         Err _ ->
           (Error "Get error", Cmd.none)
 
@@ -177,14 +193,29 @@ view model =
         )
 
 
-to_csv_name d m y =
-  "LG" ++ y ++ m ++ d ++ ".CSV"
+dmyToCsvName d0 m0 y0 =
+  let
+    d = String.pad 2 '0' d0
+    m = String.pad 2 '0' m0
+    y = String.pad 2 '0' y0
+  in
+    "LG" ++ y ++ m ++ d ++ ".CSV"
+
+
+filenameToDate filename =
+  let
+    y = String.slice 2 4 filename
+    m = String.slice 4 6 filename
+    d = String.slice 6 8 filename
+    date = "20" ++ y ++ "-" ++ m ++ "-" ++ d
+  in
+    DateControlModel date
 
 
 in_range d1 m1 y1 d2 m2 y2 name =
   let
-    min_name = to_csv_name d1 m1 y1
-    max_name = to_csv_name d2 m2 y2
+    min_name = dmyToCsvName d1 m1 y1
+    max_name = dmyToCsvName d2 m2 y2
   in
     name >= min_name && name <= max_name
 
@@ -207,14 +238,18 @@ downloadDialog model =
   case model of
     GettingServerFile data ->
       [ button [onClick DownloadToUser] [(text "download")] ] ++
+      [ text "first" ] ++
       List.map (Html.map UpdateFirst) (viewDateControl data.first) ++
+      [ text "last" ] ++
       List.map (Html.map UpdateLast) (viewDateControl data.last) ++
         let
           (first_year, first_month, first_day) = dateToComponents data.first.date
           (last_year, last_month, last_day) = dateToComponents data.last.date
           in_range_h = in_range first_day first_month first_year last_day last_month last_year
         in
-          List.map text (List.filter in_range_h (List.map .filename data.done))
+            [div [id "files-to-download"]
+              (List.map (\x -> div [] [text x]) (List.filter in_range_h (List.map .filename data.done)))
+            ]
     _ -> []
 
 
