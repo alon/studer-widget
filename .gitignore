@@ -2,3 +2,4 @@ node_modules
 widget/widget.bundle.js
 index.html
 elm-stuff
+elm.js
