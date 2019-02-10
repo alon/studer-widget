@@ -21,8 +21,14 @@ type alias DateControlModel =
   { date: String }
 
 
-type Model =
-  Init
+type alias Model = {
+    location: String,
+    m : ModelInner
+  }
+
+
+type ModelInner =
+    Init
   | GettingServerFile {
       next : (List String),
       current : Maybe String,
@@ -33,9 +39,12 @@ type Model =
   | Error String
 
 
-init : () -> (Model, Cmd Msg)
-init _ =
-  (Init, Http.get { url = "/", expect = Http.expectString GotRoot })
+extractTest flags =
+  flags
+
+
+init : String -> (Model, Cmd Msg)
+init flags = ({ location = (Debug.log (Debug.toString (extractTest flags)) flags), m = Init }, Http.get { url = "/", expect = Http.expectString GotRoot })
 
 
 parse_hrefs : String -> List String
@@ -58,7 +67,7 @@ flattenList l =
     [] :: y -> flattenList y
 
 
-download : Model -> (Model, Cmd Msg)
+download : ModelInner -> (ModelInner, Cmd Msg)
 download model =
   case model of
     GettingServerFile data ->
@@ -99,19 +108,19 @@ update msg model =
   case msg of
     DoNothing -> (model, Cmd.none)
     UpdateFirst submsg ->
-      case model of
+      case model.m of
         GettingServerFile data ->
-          (GettingServerFile { data | first = (updateDateControl submsg data.first ) }, Cmd.none)
+          ({ model | m = GettingServerFile { data | first = (updateDateControl submsg data.first ) }}, Cmd.none)
         _ ->
           (model, Cmd.none) -- and error??
     UpdateLast submsg ->
-      case model of
+      case model.m of
         GettingServerFile data ->
-          (GettingServerFile { data | last = (updateDateControl submsg data.last ) }, Cmd.none)
+          ({ model | m = GettingServerFile { data | last = (updateDateControl submsg data.last ) } }, Cmd.none)
         _ ->
           (model, Cmd.none) -- and error??
     DownloadToUser ->
-      case model of
+      case model.m of
         GettingServerFile data ->
           (model, (Download.bytes "test.tar" "application/x-tar" (tar data.done)))
         _ ->
@@ -119,22 +128,23 @@ update msg model =
     GotFile result ->
       case result of
         Ok content ->
-          case model of
+          case model.m of
             GettingServerFile data ->
               case data.current of
                 Just current ->
                   let
                     newmodel = GettingServerFile { data | done = ({ filename = current, content = content } :: data.done), current = Nothing }
+                    (new_inner, cmd) = download newmodel
                   in
-                    download newmodel
-                _ -> (Error "another unexpected case", Cmd.none)
-            _ -> (Error "unexpected endcase, how do I prevent this at compile time?", Cmd.none)
+                    ({ model | m = new_inner }, cmd)
+                _ -> ({ model | m = Error "another unexpected case"}, Cmd.none)
+            _ -> ({ model | m = Error "unexpected endcase, how do I prevent this at compile time?" }, Cmd.none)
         Err _ ->
-          case model of
+          case model.m of
             GettingServerFile data ->
-              (Error ("error downloading " ++ (Debug.toString data.current)), Cmd.none)
+              ({ model | m = Error ("error downloading " ++ (Debug.toString data.current)) }, Cmd.none)
             _ ->
-              (Error "error downloading and not in GettingServerFile, elm-help!", Cmd.none)
+              ({ model | m = Error "error downloading and not in GettingServerFile, elm-help!" }, Cmd.none)
     GotRoot result ->
       case result of
         Ok something ->
@@ -150,16 +160,17 @@ update msg model =
               lastDate = Maybe.map filenameToDate lastItem
               first = Maybe.withDefault defaultDateControlModel lastDate
               last = Maybe.withDefault defaultDateControlModel lastDate
+              (inner_m, cmd) = download (GettingServerFile {
+                  done = [],
+                  next = csvs,
+                  current = Nothing,
+                  first = first,
+                  last = last
+                })
           in
-              download (GettingServerFile {
-                done = [],
-                next = csvs,
-                current = Nothing,
-                first = first,
-                last = last
-              })
+              ({ model | m = inner_m }, cmd)
         Err _ ->
-          (Error "Get error", Cmd.none)
+          ({ model | m = Error "Get error" }, Cmd.none)
 
 
 type DateControlMsg =
@@ -177,7 +188,7 @@ type Msg =
 
 view : Model -> Html Msg
 view model =
-  case model of
+  case model.m of
     Init -> div [] [text "init"]
     Error s -> div [] [text s]
     GettingServerFile data ->
@@ -189,7 +200,7 @@ view model =
         [div [] [text (Debug.toString data.current)]] ++
         case List.length data.done of
           0 -> []
-          _ -> downloadDialog model
+          _ -> downloadDialog model.m
         )
 
 

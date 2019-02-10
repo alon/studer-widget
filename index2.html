@@ -7,7 +7,7 @@
   <body>
     <div id="main"></div>
     <script type="text/javascript">
-var app = Elm.Main.init({ node: document.getElementById("main") });
+var app = Elm.Main.init({ node: document.getElementById("main"), flags: window.location.pathname });
     </script>
   </body>
 </html>
