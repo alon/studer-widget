@@ -39,12 +39,23 @@ type ModelInner =
   | Error String
 
 
-extractTest flags =
-  flags
+removePathTop path =
+  let
+    parts = String.split "/" path
+    array = Array.fromList parts
+    len = Array.length array
+    remaining = Array.toList <| Array.slice 0 (len - 1) array
+    ret = String.join "/" remaining
+  in
+    ret ++ "/"
 
 
 init : String -> (Model, Cmd Msg)
-init flags = ({ location = (Debug.log (Debug.toString (extractTest flags)) flags), m = Init }, Http.get { url = "/", expect = Http.expectString GotRoot })
+init flags =
+  let
+    location = Debug.log ("removePathTop" ++ flags) (removePathTop flags)
+  in
+    ({ location = location, m = Init }, Http.get { url = location, expect = Http.expectString GotRoot })
 
 
 parse_hrefs : String -> List String
