@@ -178,7 +178,7 @@ view model =
 
 
 to_csv_name d m y =
-  "bla_" ++ y ++ m ++ d ++ ".csv"
+  "LG" ++ y ++ m ++ d ++ ".CSV"
 
 
 in_range d1 m1 y1 d2 m2 y2 name =
@@ -200,7 +200,7 @@ viewDateControl model =
 
 
 dateToComponents date =
-  (String.slice 0 4 date, String.slice 5 7 date, String.slice 8 10 date)
+  (String.slice 2 4 date, String.slice 5 7 date, String.slice 8 10 date)
 
 
 downloadDialog model =
