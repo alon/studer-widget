@@ -17,11 +17,11 @@ type alias AFile = { filename : String, content : String }
 
 type alias DateControlModel =
   -- todo: Maybe'fy
-  { day: String, month: String, year: String }
+  { date: String }
 
 
 defaultDateControlModel =
-  { day = "1", month = "1", year = "2019" }
+  { date = "2019-01-01" }
 
 
 type Model =
@@ -90,9 +90,7 @@ tar files =
 updateDateControl : DateControlMsg -> DateControlModel -> DateControlModel
 updateDateControl msg model =
   case msg of
-    UpdateDay day -> { model | day = day }
-    UpdateMonth month -> { model | month = month }
-    UpdateYear year -> { model | year = year }
+    UpdateDate date -> { model | date = (Debug.log "new date" date) }
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -149,9 +147,7 @@ update msg model =
 
 
 type DateControlMsg =
-  UpdateDay String
-  | UpdateMonth String
-  | UpdateYear String
+  UpdateDate String
 
 
 type Msg =
@@ -195,9 +191,16 @@ in_range d1 m1 y1 d2 m2 y2 name =
 
 viewDateControl : DateControlModel -> List (Html DateControlMsg)
 viewDateControl model =
+  [ input [ type_ "date", value model.date, onInput UpdateDate ] [] ]
+  {--
   [ input [ placeholder "day", value model.day, onInput UpdateDay ] [] ] ++
   [ input [ placeholder "month", value model.month, onInput UpdateMonth ] [] ] ++
   [ input [ placeholder "year", value model.year, onInput UpdateYear ] [] ]
+  --}
+
+
+dateToComponents date =
+  (String.slice 0 4 date, String.slice 5 7 date, String.slice 8 10 date)
 
 
 downloadDialog model =
@@ -207,9 +210,9 @@ downloadDialog model =
       List.map (Html.map UpdateFirst) (viewDateControl data.first) ++
       List.map (Html.map UpdateLast) (viewDateControl data.last) ++
         let
-          first = data.first
-          last = data.last
-          in_range_h = in_range first.day first.month first.year last.day last.month last.year
+          (first_year, first_month, first_day) = dateToComponents data.first.date
+          (last_year, last_month, last_day) = dateToComponents data.last.date
+          in_range_h = in_range first_day first_month first_year last_day last_month last_year
         in
           List.map text (List.filter in_range_h (List.map .filename data.done))
     _ -> []
