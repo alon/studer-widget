@@ -55,7 +55,7 @@ export default {
         var last = this.time[this.time.length - 1];
         var start = this.time[0];
 
-        return "XT Log: " + str__a_minus_b(this.date_start, this.date_end) + ' ' + ".." + ' ' + this.date_end 
+        return "XT Log: " + str__a_minus_b(this.date_start, this.date_end) + ' ' + ".." + ' ' + this.date_end
             + " (" + this.csv_version + ")" + ' Avg ' + this.average_num;
     },
     second: function() {

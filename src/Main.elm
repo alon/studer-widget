@@ -9,6 +9,7 @@ import Regex exposing (..)
 import File.Download as Download
 import Tar exposing (..)
 import Bytes exposing (Bytes)
+import Bytes.Encode
 
 -- My Main
 
@@ -98,7 +99,8 @@ download model =
 tar : List AFile -> Bytes
 tar files =
   let
-      transform = \f -> ({ defaultFileRecord | filename = f.filename }, StringData f.content)
+      bytes = \f -> (Bytes.Encode.encode (Bytes.Encode.string f.content))
+      transform = \f -> ({ defaultFileRecord | filename = f.filename }, BinaryData (bytes f))
       data = List.map transform files
   in
     createArchive data
