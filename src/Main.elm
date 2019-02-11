@@ -208,16 +208,20 @@ view model =
     Init -> div [] [text "init"]
     Error s -> div [] [text s]
     GettingServerFile data ->
-      div []
-        ([div [] [text "missing"]] ++
-        List.map (\x -> div [] [text x]) data.next ++
-        [div [] [text "downloaded"]] ++
-        List.map (\x -> div [] [text ("downloaded " ++ (x.filename))]) data.done ++
-        [div [] [text (Debug.toString data.current)]] ++
-        case List.length data.done of
-          0 -> []
-          _ -> downloadDialog model.m
-        )
+      let
+          missing_count = Debug.toString <| List.length data.next
+          downloaded_count = Debug.toString <| List.length data.done
+          counts = [div [] [text ("missing " ++ missing_count ++ ", downloaded " ++ downloaded_count)]]
+          current =
+            case data.current of
+              Nothing -> []
+              Just x -> [div [] [text ("downloading " ++ x)]]
+          downloadDivs =
+            case List.length data.done of
+              0 -> []
+              _ -> downloadDialog model.m
+      in
+        div [] (counts ++ current ++ downloadDivs)
 
 
 dmyToCsvName d0 m0 y0 =
