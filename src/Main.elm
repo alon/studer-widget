@@ -135,7 +135,12 @@ zipEncoder files =
 
 
 zipFileEncoder afile =
-  string "todo"
+  let
+    local_file_header = string "todo"
+    file_data = string "todo"
+    data_descriptor = string "todo"
+  in
+    Encode.sequence [local_file_header, file_data, data_descriptor]
 
 
 updateDateControl : DateControlMsg -> DateControlModel -> DateControlModel
