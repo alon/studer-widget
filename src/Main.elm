@@ -9,7 +9,7 @@ import Regex exposing (..)
 import File.Download as Download
 import Tar exposing (..)
 import Bytes exposing (Bytes)
-import Bytes.Encode exposing (encode, string, Encoder)
+import Bytes.Encode as Encode exposing (encode, string, Encoder)
 
 -- My Main
 
@@ -114,6 +114,13 @@ zip files =
 
 zipEncoder : List AFile -> Encoder
 zipEncoder files =
+  let
+      files_encoders = List.map zipFileEncoder files
+  in
+      Encode.sequence files_encoders
+
+
+zipFileEncoder afile =
   string "todo"
 
 
