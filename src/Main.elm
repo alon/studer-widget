@@ -9,7 +9,7 @@ import Regex exposing (..)
 import File.Download as Download
 import Tar exposing (..)
 import Bytes exposing (Bytes)
-import Bytes.Encode
+import Bytes.Encode exposing (encode, string, Encoder)
 
 -- My Main
 
@@ -99,11 +99,22 @@ download model =
 tar : List AFile -> Bytes
 tar files =
   let
-      bytes = \f -> (Bytes.Encode.encode (Bytes.Encode.string f.content))
+      bytes = \f -> (encode (string f.content))
       transform = \f -> ({ defaultFileRecord | filename = f.filename }, BinaryData (bytes f))
       data = List.map transform files
   in
     createArchive data
+
+
+-- This is basically a zip encoder, should be split to it's own module
+-- only implements no compression no encryption, minimum to get something
+zip : List AFile -> Bytes
+zip files =
+  files |> zipEncoder |> encode
+
+zipEncoder : List AFile -> Encoder
+zipEncoder files =
+  string "todo"
 
 
 updateDateControl : DateControlMsg -> DateControlModel -> DateControlModel
