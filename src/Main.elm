@@ -113,6 +113,7 @@ zip files =
   files |> zipEncoder |> encode
 
 -- Per ZIP File Format Specification.TXT version 6.3.2 September 28, 2007
+-- Using jxxcarlson/elm-tar/2.2.2/src/Tar.elm as reference for elm / Bytes.Encoder usage
 zipEncoder : List AFile -> Encoder
 zipEncoder files =
   let
