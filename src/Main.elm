@@ -96,11 +96,12 @@ download model =
 
 
 tar : List AFile -> Bytes
-tar files =
+tar all_files =
   let
-      bytes = \f -> (encode (string f.content))
-      transform = \f -> ({ defaultFileRecord | filename = f.filename }, BinaryData (bytes f))
-      data = List.map transform files
+    files = List.filter (\f -> String.length f.content /= 0) all_files
+    bytes = \f -> (encode (string f.content))
+    transform = \f -> ({ defaultFileRecord | filename = f.filename }, BinaryData (bytes f))
+    data = List.map transform files
   in
     createArchive data
 
