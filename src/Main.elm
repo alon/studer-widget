@@ -136,11 +136,42 @@ zipEncoder files =
 
 zipFileEncoder afile =
   let
-    local_file_header = string "todo"
+    local_file_header = zipLocalFileHeaderEncoder afile
     file_data = string "todo"
     data_descriptor = string "todo"
   in
     Encode.sequence [local_file_header, file_data, data_descriptor]
+
+
+zipLocalFileHeaderEncoder afile =
+  let
+    local_file_header_signature = Encode.unsignedInt32 Bytes.LE 0x04034b50
+    version_needed_to_extract = string "todo"
+    general_purpose_bit_flag = string "todo"
+    compression_method = string "todo"
+    last_mod_file_time = string "todo"
+    last_mod_file_date = string "todo"
+    crc_32 = string "todo"
+    compressed_size = string "todo"
+    uncompressed_size = string "todo"
+    file_name_length = string "todo"
+    file_name = string "todo"
+    extra_field = string "todo"
+  in
+  Encode.sequence [
+      local_file_header_signature,
+      version_needed_to_extract,
+      general_purpose_bit_flag,
+      compression_method,
+      last_mod_file_time,
+      last_mod_file_date,
+      crc_32,
+      compressed_size,
+      uncompressed_size,
+      file_name_length,
+      file_name,
+      extra_field
+    ]
 
 
 updateDateControl : DateControlMsg -> DateControlModel -> DateControlModel
