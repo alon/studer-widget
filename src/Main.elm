@@ -112,6 +112,7 @@ zip : List AFile -> Bytes
 zip files =
   files |> zipEncoder |> encode
 
+-- Per ZIP File Format Specification.TXT version 6.3.2 September 28, 2007
 zipEncoder : List AFile -> Encoder
 zipEncoder files =
   let
