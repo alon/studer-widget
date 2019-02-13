@@ -116,8 +116,22 @@ zipEncoder : List AFile -> Encoder
 zipEncoder files =
   let
       files_encoders = List.map zipFileEncoder files
+      archive_decryption_header = string "todo"
+      archive_extra_data_record = string "todo"
+      central_directory = string "todo"
+      zip64_end_of_central_directory_record = string "todo"
+      zip64_end_of_central_directory_locator = string "todo"
+      end_of_central_directory_record = string "todo"
+
+      endheaders = [
+        archive_decryption_header,
+        archive_extra_data_record,
+        central_directory,
+        zip64_end_of_central_directory_record,
+        zip64_end_of_central_directory_locator,
+        end_of_central_directory_record]
   in
-      Encode.sequence files_encoders
+      Encode.sequence (files_encoders ++ endheaders)
 
 
 zipFileEncoder afile =
