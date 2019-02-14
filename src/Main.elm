@@ -248,14 +248,6 @@ filenameToDate filename =
     DateControlModel date
 
 
-in_range d1 m1 y1 d2 m2 y2 name =
-  let
-    min_name = dmyToCsvName d1 m1 y1
-    max_name = dmyToCsvName d2 m2 y2
-  in
-    name >= min_name && name <= max_name
-
-
 viewDateControl : DateControlModel -> List (Html DateControlMsg)
 viewDateControl model =
   [ input [ type_ "date", value model.date, onInput UpdateDate ] [] ]
@@ -275,11 +267,11 @@ modelSelectedDownloads model =
   case model of
     GettingServerFile data ->
       let
-        (first_year, first_month, first_day) = dateToComponents data.first.date
-        (last_year, last_month, last_day) = dateToComponents data.last.date
-        in_range_h = in_range first_day first_month first_year last_day last_month last_year
+        first_date = data.first.date
+        last_date = data.last.date
+        in_range_h = \date -> ((date >= first_date) && (date <= last_date))
       in
-        List.filter (\x -> in_range_h x.filename) data.done
+        List.filter (\x -> (x.filename |> filenameToDate |> .date |> in_range_h)) data.done
     _ ->
       []
 
