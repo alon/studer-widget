@@ -5,6 +5,8 @@ import Bytes.Encode as Encode exposing (Encoder, encode, string)
 
 type alias AFile = { filename : String, content : String }
 
+type alias AFileZipData = { filename : String, content : String, crc32 : Int }
+
 
 -- This is basically a zip encoder, should be split to it's own module
 -- only implements no compression no encryption, minimum to get something
@@ -12,15 +14,25 @@ zip : List AFile -> Bytes
 zip files =
   files |> zipEncoder |> encode
 
+
+computeZipData afile =
+  { filename = afile.filename, content = afile.content, crc32 = crc32 afile.content }
+
+
+zipCentralDirectory files_data =
+  string "todo"
+
+
 -- Per ZIP File Format Specification.TXT version 6.3.2 September 28, 2007
 -- Using jxxcarlson/elm-tar/2.2.2/src/Tar.elm as reference for elm / Bytes.Encoder usage
 zipEncoder : List AFile -> Encoder
 zipEncoder files =
   let
-      files_encoders = List.map zipFileEncoder files
+      files_data = List.map computeZipData files
+      files_encoders = List.map zipFileEncoder files_data
       archive_decryption_header = string "todo"
       archive_extra_data_record = string "todo"
-      central_directory = string "todo"
+      central_directory = zipCentralDirectory files_data
       zip64_end_of_central_directory_record = string "todo"
       zip64_end_of_central_directory_locator = string "todo"
       end_of_central_directory_record = string "todo"
@@ -64,7 +76,7 @@ zipLocalFileHeaderEncoder afile =
     compression_method = z16 -- TODO
     last_mod_file_time = z16 -- TODO should be either now or from file name or get from headers?
     last_mod_file_date = z16 -- TODO -"-
-    crc_32 = u32 <| crc32 afile.content
+    crc_32 = u32 <| afile.crc32
     compressed_size = u32 <| String.length afile.content
     uncompressed_size = compressed_size
     file_name_length = u16 <| String.length afile.filename
