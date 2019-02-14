@@ -1,5 +1,5 @@
 module Zip exposing (AFile, zip)
-import Bytes exposing (Bytes)
+import Bytes exposing (Bytes, Endianness(..))
 import Bytes.Encode as Encode exposing (Encoder, encode, string)
 
 
@@ -39,26 +39,38 @@ zipEncoder files =
 zipFileEncoder afile =
   let
     local_file_header = zipLocalFileHeaderEncoder afile
-    file_data = string "todo"
-    data_descriptor = string "todo"
+    file_data = string afile.content
+    -- This descriptor only appears if bit 3 of the general purpose bit flag is set (6.3.2 V.C)
+    -- data_descriptor = string "todo"
   in
-    Encode.sequence [local_file_header, file_data, data_descriptor]
+    Encode.sequence [local_file_header, file_data]
+
+
+u32 = Encode.unsignedInt32 LE
+u16 = Encode.unsignedInt16 LE
+z32 = u32 0
+z16 = u16 0
+
+
+crc32 bytes =
+  0 -- TODO
 
 
 zipLocalFileHeaderEncoder afile =
   let
     local_file_header_signature = Encode.unsignedInt32 Bytes.LE 0x04034b50
-    version_needed_to_extract = string "todo"
-    general_purpose_bit_flag = string "todo"
-    compression_method = string "todo"
-    last_mod_file_time = string "todo"
-    last_mod_file_date = string "todo"
-    crc_32 = string "todo"
-    compressed_size = string "todo"
-    uncompressed_size = string "todo"
-    file_name_length = string "todo"
-    file_name = string "todo"
-    extra_field = string "todo"
+    version_needed_to_extract = z16 -- TODO
+    general_purpose_bit_flag = z16 -- TODO
+    compression_method = z16 -- TODO
+    last_mod_file_time = z16 -- TODO should be either now or from file name or get from headers?
+    last_mod_file_date = z16 -- TODO -"-
+    crc_32 = u32 <| crc32 afile.content
+    compressed_size = u32 <| String.length afile.content
+    uncompressed_size = compressed_size
+    file_name_length = u16 <| String.length afile.filename
+    extra_field_length = u16 0
+    file_name = string afile.filename
+    extra_field = string "" -- TODO - another way to encode zero bytes?
   in
   Encode.sequence [
       local_file_header_signature,

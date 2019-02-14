@@ -139,11 +139,11 @@ update msg model =
           let
             filtered = modelSelectedDownloads model.m
             first_file = Maybe.withDefault (AFile "empty.set" "") (List.head filtered)
-            first = first_file.filename 
+            first = first_file.filename
             first_part = String.slice 2 ((String.length first) - 4) first
-            filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length filtered)) ++ ".tar"
+            filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length filtered)) ++ ".zip"
           in
-            ( model, (Download.bytes filename "application/x-tar" (tar filtered)))
+            ( model, (Download.bytes filename "application/x-zip" (zip filtered)))
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
