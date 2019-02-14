@@ -267,11 +267,13 @@ modelSelectedDownloads model =
   case model of
     GettingServerFile data ->
       let
-        first_date = data.first.date
-        last_date = data.last.date
+        first_date_or_nothing = Debug.log "first.date" data.first.date
+        last_date_or_nothing = Debug.log "last.date" data.last.date
+        first_date = if first_date_or_nothing == "" then last_date_or_nothing else first_date_or_nothing
+        last_date = if last_date_or_nothing == "" then first_date_or_nothing else last_date_or_nothing
         in_range_h = \date -> ((date >= first_date) && (date <= last_date))
       in
-        List.filter (\x -> (x.filename |> filenameToDate |> .date |> in_range_h)) data.done
+        List.filter (\x -> (x.filename |> filenameToDate |> .date |> Debug.log "date" |> in_range_h)) data.done
     _ ->
       []
 
