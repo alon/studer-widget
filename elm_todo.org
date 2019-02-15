@@ -1,0 +1,9 @@
+* zip file general deflate will require general arrays due to how central directory works, having random (possibly) offsets
+ - writing a compressor otoh can be done with the existing Encoder.Bytes, but it is a bit suboptimcal due to the manual
+computation of offsets required, would be good if there was a way to get offsets. not sure how that matches with the encode way
+
+* Related:
+Two use cases of the new elm/bytes
+          Request Feedback
+          https://discourse.elm-lang.org/t/two-use-cases-of-the-new-elm-bytes/2518/7
+
