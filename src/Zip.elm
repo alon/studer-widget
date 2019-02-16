@@ -1,6 +1,7 @@
 module Zip exposing (AFile, zip)
 import Bytes exposing (Bytes, Endianness(..))
 import Bytes.Encode as Encode exposing (Encoder, encode, string)
+import CRC32 exposing (crc32)
 
 
 type alias AFile = { filename : String, content : String }
@@ -19,7 +20,7 @@ computeZipData offset afile =
   {
     filename = afile.filename,
     content = afile.content,
-    crc32 = crc32 afile.content,
+    crc32 = afile.content |> String.toList |> List.map Char.toCode |> crc32,
     header_and_content_width = (zipLocalFileHeaderSize afile.filename) + (Encode.getStringWidth afile.content),
     relative_offset_of_local_header = offset
   }
@@ -176,31 +177,6 @@ u32 = Encode.unsignedInt32 LE
 u16 = Encode.unsignedInt16 LE
 z32 = u32 0
 z16 = u16 0
-
-
-{-
-The CRC-32 algorithm was generously contributed by
-David Schwaderer and can be found in his excellent
-book "C Programmers Guide to NetBIOS" published by
-Howard W. Sams & Co. Inc. The 'magic number' for
-the CRC is 0xdebb20e3. The proper CRC pre and post
-conditioning is used, meaning that the CRC register
-is pre-conditioned with all ones (a starting value
-of 0xffffffff) and the value is post-conditioned by
-taking the one's complement of the CRC residual.
-If bit 3 of the general purpose flag is set, this
-field is set to zero in the local header and the correct
-value is put in the data descriptor and in the central
-directory. When encrypting the central directory, if the
-local header is not in ZIP64 format and general purpose
-bit flag 13 is set indicating masking, the value stored
-in the Local Header will be zero
- -}
-crc32 bytes =
-  let
-    magic_number = 0xdebb20e3
-  in
-    0 -- TODO
 
 
 zipLocalFileHeaderSize filename =
