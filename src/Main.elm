@@ -152,7 +152,7 @@ update msg model =
             first_part = String.slice 2 ((String.length first) - 4) first
             filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length filtered)) ++ ".zip"
             -- 429 ok 430 fails
-            brownfoxes = List.map (\x -> {x | content = String.slice 0 430 x.content}) filtered
+            brownfoxes = List.map (\x -> {x | content = String.slice 0 429 x.content}) filtered
           in
             ( model, (Download.bytes filename "application/x-zip" (zip model.crc32 brownfoxes)))
         _ ->
