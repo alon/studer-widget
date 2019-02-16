@@ -43,9 +43,9 @@ polyRemainder pol num =
       in
         if (Bitwise.and 1 n_) == 1
         then
-          Bitwise.xor (Bitwise.shiftRightBy 1 n_) pol
+          Bitwise.xor (Bitwise.shiftRightZfBy 1 n_) pol
         else
-          Bitwise.shiftRightBy 1 n_
+          Bitwise.shiftRightZfBy 1 n_
   in
     reduce step num 8
 
@@ -138,7 +138,7 @@ crc32 data_ =
       helper byte_ last_ =
         let
             last = last_ |> Debug.log "last"
-            last_8 = last |> Bitwise.shiftRightBy 8 |> Debug.log "last_8"
+            last_8 = last |> Bitwise.shiftRightZfBy 8 |> Debug.log "last_8"
             byte = byte_ |> Debug.log "byte"
             nLookupIndex = last |> Bitwise.and 0xff |> Bitwise.xor byte |> Debug.log "offset"
 
