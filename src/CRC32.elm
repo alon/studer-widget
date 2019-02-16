@@ -1,4 +1,4 @@
-module CRC32 exposing (crc32, polyRemainder, reduce, crcTable, example)
+module CRC32 exposing (crc32, calcCrc32, polyRemainder, reduce, crcTable, example, CRC32)
 
 import Array
 import Bitwise exposing (..)
@@ -38,14 +38,11 @@ reduce step n rounds =
 polyRemainder pol num =
   let
     step n =
-      let
-        n_ = Debug.log "step.n" n
-      in
-        if (Bitwise.and 1 n_) == 1
-        then
-          Bitwise.xor (Bitwise.shiftRightZfBy 1 n_) pol
-        else
-          Bitwise.shiftRightZfBy 1 n_
+      if (Bitwise.and 1 n) == 1
+      then
+        Bitwise.xor (Bitwise.shiftRightZfBy 1 n) pol
+      else
+        Bitwise.shiftRightZfBy 1 n
   in
     reduce step num 8
 
@@ -110,6 +107,12 @@ crcTable =
       ]
   in
     Array.fromList table2
+
+
+type alias CRC32 = { table : Array.Array Int }
+
+crc32 = { table = crcTable }
+
 {-
 
 From wikipedia:
@@ -131,21 +134,17 @@ for each byte in data do
 crc32 ← crc32 xor 0xFFFFFFFF
 return crc32
 -}
-crc32 data_ =
+calcCrc32 crcdata data =
   let
-      data = Debug.log "input" data_
       helper : Int -> Int -> Int
-      helper byte_ last_ =
+      helper byte last =
         let
-            last = last_ |> Debug.log "last"
-            last_8 = last |> Bitwise.shiftRightZfBy 8 |> Debug.log "last_8"
-            byte = byte_ |> Debug.log "byte"
-            nLookupIndex = last |> Bitwise.and 0xff |> Bitwise.xor byte |> Debug.log "offset"
+            nLookupIndex = last |> Bitwise.and 0xff |> Bitwise.xor byte
 
             -- TODO: how do I get rid of this withDefault - i.e. prove it cannot happen and have a fast lookup without bounds check?
-            lookedup = Array.get nLookupIndex crcTable |> Maybe.withDefault 0 |> Debug.log "lookedup"
+            lookedup = Array.get nLookupIndex crcdata.table |> Maybe.withDefault 0
         in
-            last_8 |> Bitwise.xor lookedup
+            last |> Bitwise.shiftRightZfBy 8 |> Bitwise.xor lookedup
       crc = List.foldr helper 0xffffffff (List.reverse data) -- 0xffffffff is called preconditioning
   in
       Bitwise.xor crc 0xffffffff -- this is called postconditioning

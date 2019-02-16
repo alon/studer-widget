@@ -11,6 +11,7 @@ import Tar exposing (..)
 import Bytes exposing (Bytes)
 import Bytes.Encode as Encode exposing (encode, string, Encoder)
 import Zip exposing (AFile, zip)
+import CRC32 exposing (crc32, CRC32)
 
 -- My Main
 
@@ -23,6 +24,7 @@ type alias DateControlModel =
 
 type alias Model = {
     location: String,
+    crc32: CRC32,
     m : ModelInner
   }
 
@@ -55,7 +57,14 @@ init flags =
   let
     location = Debug.log ("removePathTop" ++ flags) (removePathTop flags)
   in
-    ({ location = location, m = Init }, Http.get { url = location, expect = Http.expectString GotRoot })
+    (
+      {
+        location = location,
+        m = Init,
+        crc32 = crc32
+      },
+      Http.get { url = location, expect = Http.expectString GotRoot }
+    )
 
 
 parse_hrefs : String -> List String
@@ -143,7 +152,7 @@ update msg model =
             first_part = String.slice 2 ((String.length first) - 4) first
             filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length filtered)) ++ ".zip"
           in
-            ( model, (Download.bytes filename "application/x-zip" (zip filtered)))
+            ( model, (Download.bytes filename "application/x-zip" (zip model.crc32 filtered)))
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->

@@ -1,7 +1,7 @@
 module Zip exposing (AFile, zip)
 import Bytes exposing (Bytes, Endianness(..))
 import Bytes.Encode as Encode exposing (Encoder, encode, string)
-import CRC32 exposing (crc32)
+import CRC32 exposing (calcCrc32, CRC32)
 
 
 type alias AFile = { filename : String, content : String }
@@ -11,16 +11,16 @@ type alias AFileZipData = { filename : String, content : String, crc32 : Int }
 
 -- This is basically a zip encoder, should be split to it's own module
 -- only implements no compression no encryption, minimum to get something
-zip : List AFile -> Bytes
-zip files =
-  files |> zipEncoder |> encode
+zip : CRC32 -> List AFile -> Bytes
+zip crcobj files =
+  files |> zipEncoder crcobj |> encode
 
 
-computeZipData offset afile =
+computeZipData crcobj offset afile =
   {
     filename = afile.filename,
     content = afile.content,
-    crc32 = afile.content |> String.toList |> List.map Char.toCode |> crc32,
+    crc32 = afile.content |> String.toList |> List.map Char.toCode |> calcCrc32 crcobj,
     header_and_content_width = (zipLocalFileHeaderSize afile.filename) + (Encode.getStringWidth afile.content),
     relative_offset_of_local_header = offset
   }
@@ -144,12 +144,12 @@ zipEndCentralDirectory files_data =
 
 -- Per ZIP File Format Specification.TXT version 6.3.2 September 28, 2007
 -- Using jxxcarlson/elm-tar/2.2.2/src/Tar.elm as reference for elm / Bytes.Encoder usage
-zipEncoder : List AFile -> Encoder
-zipEncoder files =
+zipEncoder : CRC32 -> List AFile -> Encoder
+zipEncoder crcobj files =
   let
       helper file (offset, retl) =
         let
-            augfile = computeZipData offset file
+            augfile = computeZipData crcobj offset file
         in
             (offset + augfile.header_and_content_width, augfile :: retl)
       (last_offset, files_data) = List.foldr helper (0, []) files
