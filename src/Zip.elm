@@ -120,8 +120,8 @@ zipEndCentralDirectory files_data =
     end_of_central_dir_signature = u32 0x06054b50
     number_of_this_disk = z16
     number_of_the_disk_with_the_start_of_the_central_directory = z16
-    central_directory_on_this_disk = z16
-    total_number_of_entries_in_the_central_directory = u16 <| List.length files_data
+    central_directory_on_this_disk = u16 2 -- TODO copied from output of zip
+    total_number_of_entries_in_the_central_directory = u16 <| (List.length files_data) -- +1 ?
     size_of_the_central_directory = u32 (zipCentralDirectorySize files_data)
     -- todo: cache this, computed twice
     start_offset = files_data |> List.map .header_and_content_width |> listSum
@@ -218,7 +218,7 @@ zipLocalFileHeaderEncoder afile =
     compressed_size = u32 <| String.length afile.content
     uncompressed_size = compressed_size
     file_name_length = u16 <| String.length afile.filename
-    extra_field_length = u16 0
+    extra_field_length = z16
     file_name = string afile.filename
     extra_field = string "" -- TODO - another way to encode zero bytes?
   in
@@ -233,6 +233,7 @@ zipLocalFileHeaderEncoder afile =
       compressed_size,
       uncompressed_size,
       file_name_length,
+      extra_field_length,
       file_name,
       extra_field
     ]
