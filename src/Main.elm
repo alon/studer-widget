@@ -117,10 +117,6 @@ defaultDateControlModel =
   { date = "2019-01-01" }
 
 
-setToBrownFox afile =
-  { afile | content = "The quick brown fox jumps over the lazy dog" }
-
-
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
@@ -147,7 +143,7 @@ update msg model =
             first_part = String.slice 2 ((String.length first) - 4) first
             filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length filtered)) ++ ".zip"
           in
-            ( model, (Download.bytes filename "application/x-zip" (zip (List.map setToBrownFox filtered))))
+            ( model, (Download.bytes filename "application/x-zip" (zip filtered)))
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
