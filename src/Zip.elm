@@ -109,7 +109,7 @@ zipCentralDirectorySize files_data =
   let
       headers_size = files_data |> List.map .filename |> List.map zipCentralDirectoryFileHeaderSize |> listSum
   in
-    zipEndCentralDirectorySize + headers_size
+    headers_size -- + zipEndCentralDirectorySize
 
 
 zipEndCentralDirectorySize =
