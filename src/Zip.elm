@@ -151,8 +151,8 @@ zipEncoder crcobj files =
         let
             augfile = computeZipData crcobj offset file
         in
-            (offset + augfile.header_and_content_width, augfile :: retl)
-      (last_offset, files_data) = List.foldr helper (0, []) files
+            (offset + augfile.header_and_content_width, List.append retl [augfile])
+      (last_offset, files_data) = List.foldl helper (0, []) files
       files_encoders = List.map zipFileEncoder files_data
       central_directory = zipCentralDirectory files_data
 
