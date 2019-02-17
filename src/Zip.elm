@@ -4,6 +4,17 @@ import Bytes.Encode as Encode exposing (Encoder, encode, string)
 import CRC32 exposing (calcCrc32, CRC32)
 
 
+{-
+ Limitations of this zip implementation:
+
+ - compress only
+ - assumes all code points fit in a byte - trying to use elm only (no ports), and cannot find a way to convert
+    a string to a List of bytes (As opposed to code points)
+    i.e.
+    "שלום" -> Encode.getStringWidth == 8 but String.toList |> List.map Char.toCode == [1513,1500,1493,1501]
+ -}
+
+
 type alias AFile = { filename : String, content : String }
 
 type alias AFileZipData = { filename : String, content : String, crc32 : Int }
@@ -16,14 +27,30 @@ zip crcobj files =
   files |> zipEncoder crcobj |> encode
 
 
+{- TODO: this is ugly. The requirement is for a non UTF-8 clean array of bytes from a given file,
+   going through the String to begin with from the Http.get is a mistake -}
+stringToEncoderAssumingAllCodesAre8Bit s =
+  s |> String.toList |> List.map Char.toCode |> (List.map Encode.unsignedInt8) |> Encode.sequence
+
+
+type alias ZipData =
+  { filename: String, content: List Int, crc32 : Int, n : Int, header_and_content_width: Int, relative_offset_of_local_header: Int }
+
+
+computeZipData : CRC32 -> Int -> AFile -> ZipData
 computeZipData crcobj offset afile =
-  {
-    filename = afile.filename,
-    content = afile.content,
-    crc32 = afile.content |> String.toList |> List.map Char.toCode |> calcCrc32 crcobj,
-    header_and_content_width = (zipLocalFileHeaderSize afile.filename) + (Encode.getStringWidth afile.content),
-    relative_offset_of_local_header = offset
-  }
+  let
+    codePoints = afile.content |> String.toList |> List.map Char.toCode |> List.filter (\x -> x <= 127) -- try 255 later
+    n = List.length codePoints
+  in
+    {
+      filename = afile.filename,
+      content = codePoints,
+      crc32 = codePoints |> calcCrc32 crcobj,
+      n = n,
+      header_and_content_width = (zipLocalFileHeaderSize afile.filename) + n,
+      relative_offset_of_local_header = offset
+    }
 
 
 g_version_made_by = u16 10 -- 1.0, MSDOS
@@ -42,7 +69,7 @@ zipCentralDirectoryFileHeader data =
     last_mod_file_time = z16 -- TODO 2 second units
     last_mod_file_date = z16 -- TODO
     crc_32 = u32 data.crc32
-    compressed_size = u32 <| String.length data.content -- TODO: wrong if this is utf-8? should switch to AFile.content : Bytes
+    compressed_size = u32 <| data.n
     uncompressed_size = compressed_size
     file_name_length = u16 <| Encode.getStringWidth data.filename
     extra_field_length = z16
@@ -163,10 +190,11 @@ zipEncoder crcobj files =
       Encode.sequence (files_encoders ++ endheaders)
 
 
-zipFileEncoder afile =
+zipFileEncoder : ZipData -> Encoder
+zipFileEncoder zip_data =
   let
-    local_file_header = zipLocalFileHeaderEncoder afile
-    file_data = string afile.content
+    local_file_header = zipLocalFileHeaderEncoder zip_data
+    file_data = zip_data.content |> List.map Encode.unsignedInt8 |> Encode.sequence
     -- This descriptor only appears if bit 3 of the general purpose bit flag is set (6.3.2 V.C)
     -- data_descriptor = string "todo"
   in
@@ -191,9 +219,9 @@ zipLocalFileHeaderEncoder afile =
     last_mod_file_time = z16 -- TODO should be either now or from file name or get from headers?
     last_mod_file_date = z16 -- TODO -"-
     crc_32 = u32 <| afile.crc32
-    compressed_size = u32 <| String.length afile.content
+    compressed_size = u32 <| afile.n
     uncompressed_size = compressed_size
-    file_name_length = u16 <| String.length afile.filename
+    file_name_length = u16 <| Encode.getStringWidth afile.filename
     extra_field_length = z16
     file_name = string afile.filename
     extra_field = string "" -- TODO - another way to encode zero bytes?
