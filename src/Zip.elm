@@ -29,8 +29,8 @@ zip crcobj files =
 
 {- TODO: this is ugly. The requirement is for a non UTF-8 clean array of bytes from a given file,
    going through the String to begin with from the Http.get is a mistake -}
-stringToEncoderAssumingAllCodesAre8Bit s =
-  s |> String.toList |> List.map Char.toCode |> (List.map Encode.unsignedInt8) |> Encode.sequence
+-- stringToEncoderAssumingAllCodesAre8Bit s =
+--   s |> String.toList |> List.map Char.toCode |> (List.map Encode.unsignedInt8) |> Encode.sequence
 
 
 type alias ZipData =
