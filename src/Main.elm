@@ -126,10 +126,11 @@ getNextSize inner =
       case data.next of
         first :: rest ->
           (GettingServerFile { data | next = rest, current = DownloadForSizeOnly first },
-           getFileAndDecode first 0)
+           getFileAndDecode first 0,
+           True)
         [] ->
-          (inner, Cmd.none)
-    _ -> (inner, Cmd.none)
+          (inner, Cmd.none, False)
+    _ -> (inner, Cmd.none, False)
 
 
 getFullFile inner size =
@@ -181,18 +182,32 @@ update msg model =
           ({ model | m = GettingServerFile { data | last = (updateDateControl submsg data.last ) } }, Cmd.none)
         _ ->
           (model, Cmd.none) -- and error??
-    DownloadToUser ->
+    RetrieveFilesToDownloadToUser ->
       case model.m of
         GettingServerFile data ->
           let
-            filtered = modelSelectedDownloads model.m |> Debug.log "filtered"
+            inner_start = GettingServerFile { data | next = modelSelectedDownloads model.m }
+            (new_inner, cmd, continue) = getNextSize inner_start
+            new_model = { model | m = new_inner }
+          in
+            if continue then
+              (new_model, cmd)
+            else
+              update DownloadToUser new_model
+        _ ->
+          (model, Cmd.none) -- and error? all of this needs to be moved into it's own model/update cycle
+    DownloadToUser ->
+      case Debug.log "model.m" model.m of
+        GettingServerFile data ->
+          let
+            files = data.done
             empty = Encode.encode (Encode.string "")
-            first_file = Maybe.withDefault (AFile "empty.set" empty) (List.head filtered)
+            first_file = Maybe.withDefault (AFile "empty.set" empty) (List.head files)
             first = first_file.filename
             first_part = String.slice 2 ((String.length first) - 4) first
-            filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length filtered)) ++ ".zip"
-            cmd = Download.bytes filename "application/x-zip" (zip model.crc32 filtered)
-            -- cmd = Download.bytes filename "application/x-tar" (tar filtered)
+            filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length files)) ++ ".zip"
+            cmd = Download.bytes filename "application/x-zip" (zip model.crc32 files)
+            -- cmd = Download.bytes filename "application/x-tar" (tar files)
             -- cmd = Cmd.none
           in
             ( model, cmd )
@@ -212,10 +227,9 @@ update msg model =
                     ({ model | m = new_inner }, cmd)
                 DownloadAndDecode filename size ->
                   let
-                    inner1 = GettingServerFile { data | done = ({ filename = filename, content = content } :: data.done), current = NoCurrent }
-                    (new_inner, cmd) = getNextSize inner1
+                    new_inner = GettingServerFile { data | done = ({ filename = filename, content = content } :: data.done), current = NoCurrent }
                   in
-                    ({ model | m = new_inner }, cmd)
+                    update DownloadToUser { model | m = new_inner }
                 _ -> ({ model | m = Error "another unexpected case"}, Cmd.none)
             _ -> ({ model | m = Error "unexpected endcase, how do I prevent this at compile time?" }, Cmd.none)
         Err _ ->
@@ -239,15 +253,14 @@ update msg model =
               lastDate = Maybe.map filenameToDate lastItem
               first = Maybe.withDefault defaultDateControlModel lastDate
               last = Maybe.withDefault defaultDateControlModel lastDate
-              inner_m_base = GettingServerFile {
+              inner_m = GettingServerFile {
                   defaultGettingServerFile |
-                  next = csvs,
+                  total = csvs,
                   first = first,
                   last = last
                 }
-              (inner_m, cmd) = getNextSize inner_m_base
-          in
-              ({ model | m = inner_m }, cmd)
+            in
+              ({ model | m = inner_m }, Cmd.none)
         Err _ ->
           ({ model | m = Error "Get error" }, Cmd.none)
     Track progress ->
@@ -271,6 +284,7 @@ type Msg =
   DoNothing
   | GotRoot (Result Http.Error String)
   | GotFile (Result Http.Error Bytes)
+  | RetrieveFilesToDownloadToUser
   | DownloadToUser
   | UpdateFirst DateControlMsg
   | UpdateLast DateControlMsg
@@ -293,7 +307,7 @@ view model =
               DownloadForSizeOnly filename -> [div [] [text ("downloading " ++ filename ++ " for size")]]
               DownloadAndDecode filename size -> [div [] [text ("downloading " ++ filename ++ " of size " ++ (Debug.toString size))]]
           downloadDivs =
-            case List.length data.done of
+            case List.length data.total of
               0 -> []
               _ -> downloadDialog model.m
       in
@@ -333,7 +347,9 @@ dateToComponents date =
   (String.slice 2 4 date, String.slice 5 7 date, String.slice 8 10 date)
 
 
-modelSelectedDownloads : ModelInner -> List AFile
+
+
+modelSelectedDownloads : ModelInner -> List String
 modelSelectedDownloads model =
   case model of
     GettingServerFile data ->
@@ -344,7 +360,7 @@ modelSelectedDownloads model =
         last_date = if last_date_or_nothing == "" then first_date_or_nothing else last_date_or_nothing
         in_range_h = \date -> ((date >= first_date) && (date <= last_date))
       in
-        List.filter (\x -> (x.filename |> filenameToDate |> .date |> in_range_h)) data.done
+        List.filter (\x -> (x |> filenameToDate |> .date |> in_range_h)) data.total
     _ ->
       []
 
@@ -352,13 +368,13 @@ modelSelectedDownloads model =
 downloadDialog model =
   case model of
     GettingServerFile data ->
-      [ button [onClick DownloadToUser] [(text "download")] ] ++
+      [ button [onClick RetrieveFilesToDownloadToUser] [(text "download")] ] ++
       [ text "first" ] ++
       List.map (Html.map UpdateFirst) (viewDateControl data.first) ++
       [ text "last" ] ++
       List.map (Html.map UpdateLast) (viewDateControl data.last) ++
         [div [id "files-to-download"]
-          (List.map (\x -> div [] [text x]) (List.map .filename (modelSelectedDownloads model)))
+          (List.map (\x -> div [] [text x]) (modelSelectedDownloads model))
         ]
     _ -> []
 
