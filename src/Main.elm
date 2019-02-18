@@ -39,14 +39,26 @@ type CurrentDownload =
 type ModelInner =
     Init
   | GettingServerFile {
-      next : (List String),
+      total: List String,
+      next : List String,
       current : CurrentDownload,
-      done : (List AFile),
+      done : List AFile,
       first : DateControlModel,
       last : DateControlModel,
       size : Int
     }
   | Error String
+
+
+defaultGettingServerFile = {
+    total = [],
+    current = NoCurrent,
+    done = [],
+    size = 0,
+    first = defaultDateControlModel,
+    last = defaultDateControlModel,
+    next = []
+  }
 
 
 removePathTop path =
@@ -228,12 +240,10 @@ update msg model =
               first = Maybe.withDefault defaultDateControlModel lastDate
               last = Maybe.withDefault defaultDateControlModel lastDate
               inner_m_base = GettingServerFile {
-                  done = [],
+                  defaultGettingServerFile |
                   next = csvs,
-                  current = NoCurrent,
                   first = first,
-                  last = last,
-                  size = 0
+                  last = last
                 }
               (inner_m, cmd) = getNextSize inner_m_base
           in
