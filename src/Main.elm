@@ -10,6 +10,7 @@ import File.Download as Download
 import Tar exposing (..)
 import Bytes exposing (Bytes)
 import Bytes.Encode as Encode exposing (encode, string, Encoder)
+import Bytes.Decode as Decode
 import Zip exposing (AFile, zip)
 import CRC32 exposing (crc32, CRC32)
 
@@ -29,14 +30,21 @@ type alias Model = {
   }
 
 
+type CurrentDownload =
+  NoCurrent
+  | DownloadForSizeOnly String
+  | DownloadAndDecode String Int
+
+
 type ModelInner =
     Init
   | GettingServerFile {
       next : (List String),
-      current : Maybe String,
+      current : CurrentDownload,
       done : (List AFile),
       first : DateControlModel,
-      last : DateControlModel
+      last : DateControlModel,
+      size : Int
     }
   | Error String
 
@@ -87,29 +95,48 @@ flattenList l =
     [] :: y -> flattenList y
 
 
-download : ModelInner -> (ModelInner, Cmd Msg)
-download model =
-  case model of
+getFileAndDecode : String -> Int -> Cmd Msg
+getFileAndDecode filename size =
+  Http.request {
+     method = "GET",
+     url = filename ++ "#bla",
+     headers = [],
+     body = Http.emptyBody,
+     tracker = Just "csv",
+     timeout = Nothing,
+     expect = Http.expectBytes GotFile (Decode.bytes size)
+   }
+
+
+getNextSize inner =
+  case inner of
     GettingServerFile data ->
       case data.next of
         first :: rest ->
-          (GettingServerFile { data | next = rest, current = Just first, done = data.done },
-           Http.get {
-               url = first ++ "#bla",
-               expect = Http.expectString GotFile
-             }
-          )
+          (GettingServerFile { data | next = rest, current = DownloadForSizeOnly first },
+           getFileAndDecode first 0)
         [] ->
-          (model, Cmd.none)
-    _ -> (model, Cmd.none)
+          (inner, Cmd.none)
+    _ -> (inner, Cmd.none)
+
+
+getFullFile inner size =
+  case inner of
+    GettingServerFile data ->
+      case data.current of
+        DownloadForSizeOnly filename ->
+          GettingServerFile { data | current = DownloadAndDecode filename size }
+        _ ->
+          inner
+    _ -> inner
+
 
 
 tar : List AFile -> Bytes
 tar all_files =
   let
-    files = List.filter (\f -> String.length f.content /= 0) all_files
-    bytes = \f -> (encode (string f.content))
-    transform = \f -> ({ defaultFileRecord | filename = f.filename }, BinaryData (bytes f))
+    files = List.filter (\f -> Bytes.width f.content /= 0) all_files
+    transform = \f -> ({ defaultFileRecord | filename = f.filename }, BinaryData (.content f))
     data = List.map transform files
   in
     createArchive data
@@ -128,7 +155,7 @@ defaultDateControlModel =
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  case msg of
+  case Debug.log "msg" msg of
     DoNothing -> (model, Cmd.none)
     UpdateFirst submsg ->
       case model.m of
@@ -146,25 +173,35 @@ update msg model =
       case model.m of
         GettingServerFile data ->
           let
-            filtered = modelSelectedDownloads model.m
-            first_file = Maybe.withDefault (AFile "empty.set" "") (List.head filtered)
+            filtered = modelSelectedDownloads model.m |> Debug.log "filtered"
+            empty = Encode.encode (Encode.string "")
+            first_file = Maybe.withDefault (AFile "empty.set" empty) (List.head filtered)
             first = first_file.filename
             first_part = String.slice 2 ((String.length first) - 4) first
             filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length filtered)) ++ ".zip"
+            cmd = Download.bytes filename "application/x-zip" (zip model.crc32 filtered)
+            -- cmd = Download.bytes filename "application/x-tar" (tar filtered)
+            -- cmd = Cmd.none
           in
-            ( model, (Download.bytes filename "application/x-zip" (zip model.crc32 filtered)))
+            ( model, cmd )
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
-      case result of
+      case (Debug.log "got file" result) of
         Ok content ->
           case model.m of
             GettingServerFile data ->
               case data.current of
-                Just current ->
+                DownloadForSizeOnly filename ->
                   let
-                    newmodel = GettingServerFile { data | done = ({ filename = current, content = content } :: data.done), current = Nothing }
-                    (new_inner, cmd) = download newmodel
+                    new_inner = getFullFile model.m data.size
+                    cmd = getFileAndDecode filename data.size
+                  in
+                    ({ model | m = new_inner }, cmd)
+                DownloadAndDecode filename size ->
+                  let
+                    inner1 = GettingServerFile { data | done = ({ filename = filename, content = content } :: data.done), current = NoCurrent }
+                    (new_inner, cmd) = getNextSize inner1
                   in
                     ({ model | m = new_inner }, cmd)
                 _ -> ({ model | m = Error "another unexpected case"}, Cmd.none)
@@ -177,9 +214,9 @@ update msg model =
               ({ model | m = Error "error downloading and not in GettingServerFile, elm-help!" }, Cmd.none)
     GotRoot result ->
       case result of
-        Ok something ->
+        Ok result_body ->
           let
-              parsed = parse_hrefs something
+              parsed = parse_hrefs result_body
               csvs = List.sort <| List.filter (\s -> String.endsWith ".csv" (String.toLower s)) parsed
               parsedArray = Array.fromList csvs
               n = Array.length parsedArray
@@ -190,17 +227,30 @@ update msg model =
               lastDate = Maybe.map filenameToDate lastItem
               first = Maybe.withDefault defaultDateControlModel lastDate
               last = Maybe.withDefault defaultDateControlModel lastDate
-              (inner_m, cmd) = download (GettingServerFile {
+              inner_m_base = GettingServerFile {
                   done = [],
                   next = csvs,
-                  current = Nothing,
+                  current = NoCurrent,
                   first = first,
-                  last = last
-                })
+                  last = last,
+                  size = 0
+                }
+              (inner_m, cmd) = getNextSize inner_m_base
           in
               ({ model | m = inner_m }, cmd)
         Err _ ->
           ({ model | m = Error "Get error" }, Cmd.none)
+    Track progress ->
+      case Debug.log "progress" progress of
+        Http.Receiving data ->
+          case Debug.log "model.m" model.m of
+            GettingServerFile gsf ->
+              let
+                new_m = GettingServerFile { gsf | size = Maybe.withDefault 0 data.size }
+              in
+                ({model | m = new_m}, Cmd.none)
+            _ -> (model, Cmd.none)
+        _ -> (model, Cmd.none)
 
 
 type DateControlMsg =
@@ -210,10 +260,11 @@ type DateControlMsg =
 type Msg =
   DoNothing
   | GotRoot (Result Http.Error String)
-  | GotFile (Result Http.Error String)
+  | GotFile (Result Http.Error Bytes)
   | DownloadToUser
   | UpdateFirst DateControlMsg
   | UpdateLast DateControlMsg
+  | Track Http.Progress
 
 
 view : Model -> Html Msg
@@ -228,8 +279,9 @@ view model =
           counts = [div [] [text ("missing " ++ missing_count ++ ", downloaded " ++ downloaded_count)]]
           current =
             case data.current of
-              Nothing -> []
-              Just x -> [div [] [text ("downloading " ++ x)]]
+              NoCurrent -> []
+              DownloadForSizeOnly filename -> [div [] [text ("downloading " ++ filename ++ " for size")]]
+              DownloadAndDecode filename size -> [div [] [text ("downloading " ++ filename ++ " of size " ++ (Debug.toString size))]]
           downloadDivs =
             case List.length data.done of
               0 -> []
@@ -303,7 +355,7 @@ downloadDialog model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+  Http.track "csv" Track
 
 
 main =

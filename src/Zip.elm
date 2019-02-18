@@ -1,6 +1,7 @@
 module Zip exposing (AFile, zip)
 import Bytes exposing (Bytes, Endianness(..))
 import Bytes.Encode as Encode exposing (Encoder, encode, string)
+import Bytes.Decode as Decode exposing (Decoder, loop, Step(..))
 import CRC32 exposing (calcCrc32, CRC32)
 
 
@@ -15,9 +16,9 @@ import CRC32 exposing (calcCrc32, CRC32)
  -}
 
 
-type alias AFile = { filename : String, content : String }
+type alias AFile = { filename : String, content : Bytes }
 
-type alias AFileZipData = { filename : String, content : String, crc32 : Int }
+type alias AFileZipData = { filename : String, content : Bytes, length : Int, crc32 : Int }
 
 
 -- This is basically a zip encoder, should be split to it's own module
@@ -37,10 +38,27 @@ type alias ZipData =
   { filename: String, content: List Int, crc32 : Int, n : Int, header_and_content_width: Int, relative_offset_of_local_header: Int }
 
 
+
+listStep : Decoder a -> (Int, List a) -> Decoder (Step (Int, List a) (List a))
+listStep decoder (n, xs) =
+  if n <= 0 then
+    Decode.succeed (Done (List.reverse xs))
+  else
+    Decode.map (\x -> Loop (n - 1, x :: xs)) decoder
+
+
+bytesToUint8 bytes =
+  let
+    decoder = loop ((Bytes.width bytes), []) (listStep Decode.unsignedInt8)
+  in
+    Decode.decode decoder bytes |> Maybe.withDefault []
+-- Decoder.decode (String.toList |> List.map Char.toCode |> List.filter (\x -> x <= 127) -- try 255 later
+
+
 computeZipData : CRC32 -> Int -> AFile -> ZipData
 computeZipData crcobj offset afile =
   let
-    codePoints = afile.content |> String.toList |> List.map Char.toCode |> List.filter (\x -> x <= 127) -- try 255 later
+    codePoints = afile.content |> bytesToUint8
     n = List.length codePoints
   in
     {
