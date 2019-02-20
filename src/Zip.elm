@@ -9,11 +9,13 @@ import CRC32 exposing (calcCrc32, CRC32)
  Limitations of this zip implementation:
 
  - compress only
- - assumes all code points fit in a byte - trying to use elm only (no ports), and cannot find a way to convert
-    a string to a List of bytes (As opposed to code points)
-    i.e.
-    "שלום" -> Encode.getStringWidth == 8 but String.toList |> List.map Char.toCode == [1513,1500,1493,1501]
- -}
+ - store only, i.e. 1:1 compression ratio
+ - only decompresses with unzip
+  - off by 4 header size error
+ - no time stamps
+ - no attributes
+ - not tested with subdirectories (maybe will fail due to lack of attributes)
+-}
 
 
 type alias AFile = { filename : String, content : Bytes }
