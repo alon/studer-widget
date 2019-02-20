@@ -30,12 +30,6 @@ zip crcobj files =
   files |> zipEncoder crcobj |> encode
 
 
-{- TODO: this is ugly. The requirement is for a non UTF-8 clean array of bytes from a given file,
-   going through the String to begin with from the Http.get is a mistake -}
--- stringToEncoderAssumingAllCodesAre8Bit s =
---   s |> String.toList |> List.map Char.toCode |> (List.map Encode.unsignedInt8) |> Encode.sequence
-
-
 type alias ZipData =
   { filename: String, content: List Int, crc32 : Int, n : Int, header_and_content_width: Int, relative_offset_of_local_header: Int }
 
@@ -54,19 +48,18 @@ bytesToUint8 bytes =
     decoder = loop ((Bytes.width bytes), []) (listStep Decode.unsignedInt8)
   in
     Decode.decode decoder bytes |> Maybe.withDefault []
--- Decoder.decode (String.toList |> List.map Char.toCode |> List.filter (\x -> x <= 127) -- try 255 later
 
 
 computeZipData : CRC32 -> Int -> AFile -> ZipData
 computeZipData crcobj offset afile =
   let
-    codePoints = afile.content |> bytesToUint8
-    n = List.length codePoints
+    content = afile.content |> bytesToUint8
+    n = List.length content
   in
     {
       filename = afile.filename,
-      content = codePoints,
-      crc32 = codePoints |> calcCrc32 crcobj,
+      content = content,
+      crc32 = content |> calcCrc32 crcobj,
       n = n,
       header_and_content_width = (zipLocalFileHeaderSize afile.filename) + n,
       relative_offset_of_local_header = offset
