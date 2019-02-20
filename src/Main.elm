@@ -186,7 +186,8 @@ update msg model =
       case model.m of
         GettingServerFile data ->
           let
-            inner_start = GettingServerFile { data | next = modelSelectedDownloads model.m }
+            next = modelSelectedDownloads model.m
+            inner_start = GettingServerFile { data | next = next, done = [] } -- TODO: could avoid dropping all of done, only drop the ones we don't need now, i.e. not in next
             (new_inner, cmd, continue) = getNextSize inner_start
             new_model = { model | m = new_inner }
           in
@@ -197,10 +198,11 @@ update msg model =
         _ ->
           (model, Cmd.none) -- and error? all of this needs to be moved into it's own model/update cycle
     DownloadToUser ->
-      case Debug.log "model.m" model.m of
+      case model.m of
         GettingServerFile data ->
           let
             files = data.done
+            x = Debug.log "DownloadToUser called" (List.length files)
             empty = Encode.encode (Encode.string "")
             first_file = Maybe.withDefault (AFile "empty.set" empty) (List.head files)
             first = first_file.filename
@@ -213,9 +215,9 @@ update msg model =
                 Download.bytes filename "application/x-tar" (tar files)
               else
                 Download.bytes filename "application/x-zip" (zip model.crc32 files)
-            -- cmd = Cmd.none
+            cmd_unused = Cmd.none
           in
-            ( model, cmd )
+            ( model, Debug.log "saving" cmd_unused )
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
@@ -233,8 +235,12 @@ update msg model =
                 DownloadAndDecode filename size ->
                   let
                     new_inner = GettingServerFile { data | done = ({ filename = filename, content = content } :: data.done), current = NoCurrent }
+                    (next_inner, cmd, continue) = getNextSize new_inner
                   in
-                    update DownloadToUser { model | m = new_inner }
+                    if continue then
+                      ({ model | m = next_inner}, cmd)
+                    else
+                      update DownloadToUser { model | m = new_inner }
                 _ -> ({ model | m = Error "another unexpected case"}, Cmd.none)
             _ -> ({ model | m = Error "unexpected endcase, how do I prevent this at compile time?" }, Cmd.none)
         Err _ ->
@@ -271,7 +277,7 @@ update msg model =
     Track progress ->
       case Debug.log "progress" progress of
         Http.Receiving data ->
-          case Debug.log "model.m" model.m of
+          case model.m of
             GettingServerFile gsf ->
               let
                 new_m = GettingServerFile { gsf | size = Maybe.withDefault 0 data.size }
