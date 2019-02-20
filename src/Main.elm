@@ -75,7 +75,7 @@ removePathTop path =
 init : String -> (Model, Cmd Msg)
 init flags =
   let
-    location = Debug.log ("removePathTop" ++ flags) (removePathTop flags)
+    location = removePathTop flags
   in
     (
       {
@@ -166,9 +166,16 @@ defaultDateControlModel =
   { date = "2019-01-01" }
 
 
+currentToString current =
+  case current of
+    NoCurrent -> "NoCurrent"
+    DownloadForSizeOnly s -> "DownloadForSizeOnly " ++ s
+    DownloadAndDecode s i -> "DownloadAndDecode " ++ s ++ ", " ++ (String.fromInt i)
+
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-  case Debug.log "msg" msg of
+  case msg of
     DoNothing -> (model, Cmd.none)
     UpdateFirst submsg ->
       case model.m of
@@ -202,7 +209,6 @@ update msg model =
         GettingServerFile data ->
           let
             files = data.done
-            x = Debug.log "DownloadToUser called" (List.length files)
             empty = Encode.encode (Encode.string "")
             first_file = Maybe.withDefault (AFile "empty.set" empty) (List.head files)
             first = first_file.filename
@@ -217,11 +223,11 @@ update msg model =
                 Download.bytes filename "application/x-zip" (zip model.crc32 files)
             cmd_unused = Cmd.none
           in
-            ( model, Debug.log "saving" cmd_unused )
+            ( model, cmd )
         _ ->
           (model, Cmd.none) -- TODO - show an error to the user
     GotFile result ->
-      case (Debug.log "got file" result) of
+      case result of
         Ok content ->
           case model.m of
             GettingServerFile data ->
@@ -246,7 +252,7 @@ update msg model =
         Err _ ->
           case model.m of
             GettingServerFile data ->
-              ({ model | m = Error ("error downloading " ++ (Debug.toString data.current)) }, Cmd.none)
+              ({ model | m = Error ("error downloading " ++ (currentToString data.current)) }, Cmd.none)
             _ ->
               ({ model | m = Error "error downloading and not in GettingServerFile, elm-help!" }, Cmd.none)
     GotRoot result ->
@@ -275,7 +281,7 @@ update msg model =
         Err _ ->
           ({ model | m = Error "Get error" }, Cmd.none)
     Track progress ->
-      case Debug.log "progress" progress of
+      case progress of
         Http.Receiving data ->
           case model.m of
             GettingServerFile gsf ->
@@ -309,14 +315,14 @@ view model =
     Error s -> div [] [text s]
     GettingServerFile data ->
       let
-          missing_count = Debug.toString <| List.length data.next
-          downloaded_count = Debug.toString <| List.length data.done
+          missing_count = String.fromInt <| List.length data.next
+          downloaded_count = String.fromInt <| List.length data.done
           counts = [div [] [text ("missing " ++ missing_count ++ ", downloaded " ++ downloaded_count)]]
           current =
             case data.current of
               NoCurrent -> []
               DownloadForSizeOnly filename -> [div [] [text ("downloading " ++ filename ++ " for size")]]
-              DownloadAndDecode filename size -> [div [] [text ("downloading " ++ filename ++ " of size " ++ (Debug.toString size))]]
+              DownloadAndDecode filename size -> [div [] [text ("downloading " ++ filename ++ " of size " ++ (String.fromInt size))]]
           downloadDivs =
             case List.length data.total of
               0 -> []
