@@ -365,6 +365,36 @@ modelSelectedDownloads model =
       []
 
 
+humanReadableByteSize n =
+  if n < 1024 then
+    String.fromInt n
+  else if n < (1024 * 1024) then
+    String.fromInt (n // 1024) ++ " KiB"
+  else if n < (1024 * 1024 * 1024) then
+    String.fromInt (n // (1024 * 1024)) ++ " MiB"
+  else
+    String.fromInt (n // (1024 * 1024 * 1024)) ++ " GiB"
+
+
+shortFileDescription : List String -> List (Html Msg)
+shortFileDescription files =
+  let
+    n = List.length files
+    estimatedSize = 200000 * n
+    first = Maybe.withDefault "" <| List.head files
+    last = Maybe.withDefault "" <| List.head (List.reverse files) -- # simpler way to get last? what code does this compile to - is the reverse actually done?
+    files_text =
+      if n >= 3 then
+        [first, ".. " ++ (String.fromInt (n - 2)) ++ " more files ..", last]
+      else
+        files
+    files_div = [div [] (List.map text files_text)]
+    class_name = if estimatedSize > 1024 * 1024 * 10 then "large-size" else "small-size"
+  in
+    [span [class class_name] [text <| "Estimated size: " ++ (humanReadableByteSize estimatedSize)]] ++ files_div
+
+
+
 downloadDialog model =
   case model of
     GettingServerFile data ->
@@ -374,7 +404,7 @@ downloadDialog model =
       [ text "last" ] ++
       List.map (Html.map UpdateLast) (viewDateControl data.last) ++
         [div [id "files-to-download"]
-          (List.map (\x -> div [] [text x]) (modelSelectedDownloads model))
+          (shortFileDescription (modelSelectedDownloads model))
         ]
     _ -> []
 
