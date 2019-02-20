@@ -205,9 +205,14 @@ update msg model =
             first_file = Maybe.withDefault (AFile "empty.set" empty) (List.head files)
             first = first_file.filename
             first_part = String.slice 2 ((String.length first) - 4) first
-            filename = "studer_" ++ first_part ++ "_" ++ (Debug.toString (List.length files)) ++ ".zip"
-            cmd = Download.bytes filename "application/x-zip" (zip model.crc32 files)
-            -- cmd = Download.bytes filename "application/x-tar" (tar files)
+            filename_base = "studer_" ++ first_part ++ "_" ++ (String.fromInt (List.length files))
+            use_tar = True -- TODO: pick this up from flags
+            filename_ext = if use_tar then "tar" else "zip"
+            filename = filename_base ++ "." ++ filename_ext
+            cmd = if use_tar then
+                Download.bytes filename "application/x-zip" (zip model.crc32 files)
+              else
+                Download.bytes filename "application/x-tar" (tar files)
             -- cmd = Cmd.none
           in
             ( model, cmd )
