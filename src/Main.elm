@@ -210,9 +210,9 @@ update msg model =
             filename_ext = if use_tar then "tar" else "zip"
             filename = filename_base ++ "." ++ filename_ext
             cmd = if use_tar then
-                Download.bytes filename "application/x-zip" (zip model.crc32 files)
-              else
                 Download.bytes filename "application/x-tar" (tar files)
+              else
+                Download.bytes filename "application/x-zip" (zip model.crc32 files)
             -- cmd = Cmd.none
           in
             ( model, cmd )
