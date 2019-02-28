@@ -71,7 +71,7 @@ g_version_needed_to_extract = u16 10 -- 1.0
 
 
 zipCentralDirectoryFileHeaderSize filename =
-  (2 * 6 + 4 * 3 + 2 * 5 + 4 + 4 + (Encode.getStringWidth filename))
+  (2 * 6 + 4 * 3 + 2 * 5 + 4 + 4 + 4 + (Encode.getStringWidth filename))
 
 zipCentralDirectoryFileHeader data =
   let
