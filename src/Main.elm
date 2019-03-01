@@ -45,7 +45,8 @@ type ModelInner =
       done : List AFile,
       first : DateControlModel,
       last : DateControlModel,
-      size : Int
+      size : Int,
+      format : Format
     }
   | Error String
 
@@ -57,7 +58,8 @@ defaultGettingServerFile = {
     size = 0,
     first = defaultDateControlModel,
     last = defaultDateControlModel,
-    next = []
+    next = [],
+    format = Tar
   }
 
 
@@ -173,6 +175,11 @@ currentToString current =
     DownloadAndDecode s i -> "DownloadAndDecode " ++ s ++ ", " ++ (String.fromInt i)
 
 
+type Format
+  = Zip
+  | Tar
+
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
@@ -189,12 +196,12 @@ update msg model =
           ({ model | m = GettingServerFile { data | last = (updateDateControl submsg data.last ) } }, Cmd.none)
         _ ->
           (model, Cmd.none) -- and error??
-    RetrieveFilesToDownloadToUser ->
+    RetrieveFilesToDownloadToUser format ->
       case model.m of
         GettingServerFile data ->
           let
             next = modelSelectedDownloads model.m
-            inner_start = GettingServerFile { data | next = next, done = [] } -- TODO: could avoid dropping all of done, only drop the ones we don't need now, i.e. not in next
+            inner_start = GettingServerFile { data | next = next, done = [], format = format } -- TODO: could avoid dropping all of done, only drop the ones we don't need now, i.e. not in next
             (new_inner, cmd, continue) = getNextSize inner_start
             new_model = { model | m = new_inner }
           in
@@ -214,14 +221,11 @@ update msg model =
             first = first_file.filename
             first_part = String.slice 2 ((String.length first) - 4) first
             filename_base = "studer_" ++ first_part ++ "_" ++ (String.fromInt (List.length files))
-            use_tar = True -- TODO: pick this up from flags
-            filename_ext = if use_tar then "tar" else "zip"
-            filename = filename_base ++ "." ++ filename_ext
-            cmd = if use_tar then
-                Download.bytes filename "application/x-tar" (tar files)
-              else
-                Download.bytes filename "application/x-zip" (zip model.crc32 files)
-            cmd_unused = Cmd.none
+            cmd = case data.format of
+              Tar ->
+                Download.bytes (filename_base ++ ".tar") "application/x-tar" (tar files)
+              Zip ->
+                Download.bytes (filename_base ++ ".zip") "application/x-zip" (zip model.crc32 files)
           in
             ( model, cmd )
         _ ->
@@ -301,7 +305,7 @@ type Msg =
   DoNothing
   | GotRoot (Result Http.Error String)
   | GotFile (Result Http.Error Bytes)
-  | RetrieveFilesToDownloadToUser
+  | RetrieveFilesToDownloadToUser Format
   | DownloadToUser
   | UpdateFirst DateControlMsg
   | UpdateLast DateControlMsg
@@ -415,7 +419,8 @@ shortFileDescription files =
 downloadDialog model =
   case model of
     GettingServerFile data ->
-      [ button [onClick RetrieveFilesToDownloadToUser] [(text "download")] ] ++
+      [ button [onClick (RetrieveFilesToDownloadToUser Tar)] [(text "download tar")] ] ++
+      [ button [onClick (RetrieveFilesToDownloadToUser Zip)] [(text "download zip")] ] ++
       [ text "first" ] ++
       List.map (Html.map UpdateFirst) (viewDateControl data.first) ++
       [ text "last" ] ++
