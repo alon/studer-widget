@@ -103,7 +103,7 @@ function get_all_csv_files(root, response)
     function got_one(result) {
         left = left - 1;
         download_progress.style.display = (left == 0) ? 'none' : 'block';
-        download_progress.innerHTML = `${left}`;
+        download_progress.innerHTML = `${left} files left to download`;
         return result;
     }
     fullnames.forEach(fullname => {
