@@ -1,4 +1,4 @@
 #!/bin/bash
 
-./build_debug.sh && \
+./build.sh && \
 cp elm.js elm.css ~/logs/app

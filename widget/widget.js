@@ -89,14 +89,26 @@ function get_all_csv_files(root, response)
     var data = (response.data);
     var promises = [];
     var lines = data.split('\n');
+    let fullnames = [];
     for (var i = 0 ; i < lines.length ; ++i)
     {
         if (/\.CSV$/.test(lines[i])) {
             let fullname = root === null || root.length === undefined || root.length === 0 ? lines[i] : root + '/' + lines[i];
+            fullnames.push(fullname);
             filenames.push(lines[i]);
-            promises.push(axios.get(fullname));
         }
     }
+    let left = fullnames.length;
+    let download_progress = document.querySelector('#download_progress');
+    function got_one(result) {
+        left = left - 1;
+        download_progress.style.display = (left == 0) ? 'none' : 'block';
+        download_progress.innerHTML = `${left}`;
+        return result;
+    }
+    fullnames.forEach(fullname => {
+        promises.push(axios.get(fullname).then(got_one));
+    });
     return Promise.all(promises); // TODO: what are the requirements? should I have alternative implementations?
 }
 
