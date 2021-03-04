@@ -3,7 +3,7 @@
 console.log('node environment is: ' + process.env.NODE_ENV);
 
 const path = require('path');
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
+const TerserJsPlugin = require('terser-webpack-plugin')
 const webpack = require('webpack');
 
 const vueLoaderConfig = {
@@ -22,7 +22,7 @@ const vueLoaderConfig = {
 };
 
 let plugins_prod = [
-    new UglifyJsPlugin({
+    new TerserJsPlugin({
         sourceMap: true,
     }),
     new webpack.DefinePlugin({
