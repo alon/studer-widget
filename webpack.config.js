@@ -3,8 +3,9 @@
 console.log('node environment is: ' + process.env.NODE_ENV);
 
 const path = require('path');
-const TerserJsPlugin = require('terser-webpack-plugin')
+const TerserJsPlugin = require('terser-webpack-plugin');
 const webpack = require('webpack');
+const { VueLoaderPlugin } = require('vue-loader');
 
 const vueLoaderConfig = {
   //loaders: utils.cssLoaders({
@@ -22,16 +23,17 @@ const vueLoaderConfig = {
 };
 
 let plugins_prod = [
-    new TerserJsPlugin({
-        sourceMap: true,
-    }),
+    new VueLoaderPlugin(),
+    new TerserJsPlugin({}),
     new webpack.DefinePlugin({
         'process.env': {
             NODE_ENV: '"production"',
         }
     }),
  ];
-let plugins_dev = [];
+let plugins_dev = [
+    new VueLoaderPlugin(),
+];
 let plugins = process.env.NODE_ENV == 'production' ? plugins_prod : plugins_dev;
 
 module.exports = {
@@ -71,6 +73,13 @@ module.exports = {
          use: {
              loader: 'babel-loader?cacheDirectory=true',
          }
+     },
+     {
+       test: /\.css$/,
+       use: [
+         'vue-style-loader',
+         'css-loader'
+       ]
      },
      ]
  }
